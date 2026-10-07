@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data:; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data:; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; object-src 'none'; base-uri 'self';" />
   <title>MikroTik Config Guide — CFP-CMD</title>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Barlow:wght@300;400;600&display=swap" rel="stylesheet" />
 
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <!-- Font Awesome (SRI à épingler après téléchargement local ; crossorigin déjà actif) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" />
 
-  <!-- Highlight.js -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <!-- Highlight.js (SRI à épingler après téléchargement local ; crossorigin déjà actif) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" crossorigin="anonymous" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" crossorigin="anonymous" defer></script>
 
   <style>
     /* ─── CSS VARIABLES ─────────────────────────────────────────────── */
@@ -90,6 +90,27 @@
       padding: 0 20px;
       z-index: 200;
       box-shadow: 0 2px 20px rgba(0,0,0,0.4);
+    }
+
+    /* ─── Skip-link accessibilité ────────────────────────────────────── */
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: var(--accent);
+      color: #000;
+      padding: 10px 16px;
+      font-weight: 700;
+      z-index: 999;
+      border-radius: 0 0 8px 0;
+    }
+
+    .skip-link:focus { left: 0; }
+
+    /* ─── Focus clavier visible ──────────────────────────────────────── */
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
 
     .header-logo {
@@ -940,21 +961,22 @@
 </head>
 
 <body>
+<a class="skip-link" href="#main">Aller au contenu principal</a>
 <!-- HEADER -->
 <header id="header">
   <div class="header-logo">
     <div class="logo-icon"><i class="fa-solid fa-network-wired"></i></div>
     <div>
       <div class="logo-text">MikroTik Guide</div>
-      <span class="logo-sub">CFP-CMD · v1.0</span>
+      <span class="logo-sub">CFP-CMD · v1.1</span>
     </div>
   </div>
 
   <div class="header-search">
-    <input type="text" id="search-input" placeholder="Rechercher commandes, concepts..." autocomplete="off" />
-    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+    <input type="text" id="search-input" placeholder="Rechercher commandes, concepts..." autocomplete="off" aria-label="Rechercher dans le guide" aria-expanded="false" aria-controls="search-results" />
+    <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
   </div>
-  <div id="search-results"></div>
+  <div id="search-results" role="status" aria-live="polite"></div>
 
   <div class="header-actions">
     <button class="btn-icon" id="mobile-menu-btn" title="Menu" aria-label="Ouvrir menu">
@@ -999,7 +1021,10 @@
 <div id="sidebar-overlay"></div>
 
 <!-- TOAST CONTAINER -->
-<div id="toast-container"></div>
+<div id="toast-container" role="status" aria-live="polite"></div>
+
+<!-- Bouton retour en haut (accessibilité + mobile) -->
+<button id="back-to-top" class="btn-icon" title="Retour en haut" aria-label="Retour en haut" style="position:fixed;right:16px;bottom:16px;z-index:180;display:none;"><i class="fa-solid fa-arrow-up"></i></button>
 
 <script>
 // ═══════════════════════════════════════════════════════════════
@@ -1048,7 +1073,7 @@ const appData = {
       step: "01",
       description: "La première étape est de sécuriser l'accès au routeur. Nous créons un utilisateur administrateur fort, désactivons le compte admin par défaut, et limitons les services exposés pour réduire la surface d'attaque.",
       cliCommands: [
-        "# 1. Créer un nouvel utilisateur administrateur\n/user add name=adm_network group=full password=S3cur3P@ss!2024",
+        "# 1. Créer un nouvel utilisateur administrateur\n# ⚠️ Remplacez <MOT_DE_PASSE_FORT> par un mot de passe robuste et unique\n/user add name=adm_network group=full password=<MOT_DE_PASSE_FORT>",
         "# 2. Désactiver le compte admin par défaut\n/user set admin disabled=yes",
         "# 3. Désactiver les services inutiles\n/ip service disable telnet,ftp,www,api,api-ssl",
         "# 4. Restreindre SSH et WinBox à un sous-réseau\n/ip service set ssh address=192.168.88.0/24 port=22\n/ip service set winbox address=192.168.88.0/24",
@@ -1067,10 +1092,12 @@ const appData = {
       terminology: ["Brute force", "ACL", "Service hardening", "SSH", "WinBox", "Privilege escalation"],
       concepts: [
         { term: "Surface d'attaque", def: "Ensemble des points d'entrée exposés. La réduire limite les vecteurs d'attaque possibles." },
-        { term: "Principe du moindre privilège", def: "N'accorder que les droits strictement nécessaires à chaque compte ou service." }
+        { term: "Principe du moindre privilège", def: "N'accorder que les droits strictement nécessaires à chaque compte ou service." },
+        { term: "Mot de passe fort", def: "Au moins 12 caractères, mélange majuscules/minuscules/chiffres/symboles, unique par équipement. Ne JAMAIS réutiliser les exemples de ce guide en production." }
       ],
       alerts: [
         { type: "warning", icon: "fa-triangle-exclamation", text: "Déconnectez-vous APRÈS avoir vérifié que le nouvel utilisateur fonctionne. Ne jamais désactiver admin avant de valider le nouveau compte !" },
+        { type: "warning", icon: "fa-key", text: "Les mots de passe de ce guide sont des PLACEHOLDERS (<MOT_DE_PASSE_FORT>, <CLE_WIFI_FORTE>). Remplacez-les systématiquement avant toute mise en production." },
         { type: "info", icon: "fa-circle-info", text: "WinBox se reconnecte automatiquement. Assurez-vous que votre IP est dans le sous-réseau autorisé avant de restreindre les services." }
       ]
     },
@@ -1107,7 +1134,7 @@ const appData = {
       step: "03",
       description: "Configuration de l'interface sans fil avec sécurité WPA2-PSK, définition du SSID, de la fréquence et du mode AP, puis rattachement au bridge pour unifier filaire et sans-fil.",
       cliCommands: [
-        "# 1. Créer un profil de sécurité WPA2\n/interface wireless security-profiles add name=wifi-secure \\\n  mode=dynamic-keys wpa2-pre-shared-key=\"MotDePasse2024!\" \\\n  authentication-types=wpa2-psk",
+        "# 1. Créer un profil de sécurité WPA2\n# ⚠️ Remplacez <CLE_WIFI_FORTE> par une clé WPA2 robuste (min. 12 caractères)\n/interface wireless security-profiles add name=wifi-secure \\\n  mode=dynamic-keys wpa2-pre-shared-key=\"<CLE_WIFI_FORTE>\" \\\n  authentication-types=wpa2-psk",
         "# 2. Configurer l'interface Wi-Fi (2.4 GHz)\n/interface wireless set wlan1 \\\n  ssid=\"CFP-CMD-WiFi\" \\\n  mode=ap-bridge \\\n  band=2ghz-b/g/n \\\n  channel-width=20/40mhz-XX \\\n  frequency=auto \\\n  security-profile=wifi-secure \\\n  disabled=no",
         "# 3. Ajouter wlan1 au bridge\n/interface bridge port add bridge=bridge-local interface=wlan1",
         "# 4. (Optionnel) Interface 5 GHz\n/interface wireless set wlan2 \\\n  ssid=\"CFP-CMD-5G\" mode=ap-bridge \\\n  band=5ghz-a/n/ac security-profile=wifi-secure disabled=no\n/interface bridge port add bridge=bridge-local interface=wlan2"
@@ -1257,7 +1284,7 @@ const appData = {
       description: "Configuration du serveur Hotspot sur le VLAN20 pour les invités avec portail captif d'authentification. Ajout du blocage du tethering via filtrage TTL pour empêcher le partage de connexion non autorisé.",
       cliCommands: [
         "# ─── HOTSPOT ────────────────────────────────────────────────────\n# 1. Configurer le serveur Hotspot sur VLAN20\n/ip hotspot setup\n# Répondre aux questions :\n# hotspot interface: vlan20-Hotspot\n# local address: 192.168.20.1\n# masquerade: yes\n# pool: 192.168.20.100-192.168.20.250\n# DNS: 8.8.8.8",
-        "# 2. Créer un utilisateur hotspot de test\n/ip hotspot user add name=invite1 password=invite1 comment=\"Utilisateur invité test\"",
+        "# 2. Créer un utilisateur hotspot de test\n# ⚠️ Compte de démonstration — changez le mot de passe en production\n/ip hotspot user add name=invite-demo password=<MOT_DE_PASSE_INVITE> comment=\"Utilisateur invité test\"",
         "# 3. Personnaliser le profil hotspot\n/ip hotspot profile set [find default=yes] \\\n  login-by=http-chap \\\n  http-cookie-lifetime=1d \\\n  html-directory=hotspot",
         "# ─── BLOCAGE TETHERING (TTL Filtering) ──────────────────────────\n# 4. Marquer les paquets TTL <= 1 (tethering détecté)\n/ip firewall mangle add chain=prerouting \\\n  in-interface=vlan20-Hotspot \\\n  ttl=less-than:2 \\\n  action=mark-packet new-packet-mark=tethering passthrough=no",
         "# 5. Bloquer les paquets marqués comme tethering\n/ip firewall filter add chain=forward \\\n  packet-mark=tethering \\\n  action=drop \\\n  comment=\"Blocage tethering VLAN20\""
@@ -1265,7 +1292,7 @@ const appData = {
       winboxSteps: [
         "<span class='wb-path'>IP → Hotspot → Setup</span> → Sélectionner <code>vlan20-Hotspot</code> comme interface",
         "Suivre l'assistant : adresse locale, pool DHCP, DNS → Terminer",
-        "<span class='wb-path'>IP → Hotspot → Users → [+]</span> → Name = <code>invite1</code>, Password = mot de passe",
+        "<span class='wb-path'>IP → Hotspot → Users → [+]</span> → Name = <code>invite-demo</code>, Password = <code>&lt;MOT_DE_PASSE_INVITE&gt;</code> (compte de démonstration)",
         "<span class='wb-path'>IP → Firewall → Mangle → [+]</span>",
         "Chain = <code>prerouting</code>, In. Interface = <code>vlan20-Hotspot</code>, TTL = less than 2",
         "Action = mark packet, New Mark = <code>tethering</code>",
@@ -1414,6 +1441,22 @@ const glossaryData = {
 };
 
 // ═══════════════════════════════════════════════════════════════
+// SAFE STORAGE — accès localStorage protégé (mode privé, cookies bloqués)
+// Pourquoi : localStorage.getItem/setItem lève une exception si le stockage
+// est désactivé ; sans garde, toute l'init SPA planterait.
+// ═══════════════════════════════════════════════════════════════
+const safeStorage = {
+  get(key, fallback = null) {
+    try { const v = localStorage.getItem(key); return v === null ? fallback : v; }
+    catch (e) { return fallback; }
+  },
+  set(key, value) {
+    try { localStorage.setItem(key, value); return true; }
+    catch (e) { return false; }
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════
 let currentSectionIndex = 0;
@@ -1424,18 +1467,18 @@ let searchTimeout = null;
 // INIT
 // ═══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-  // Restore theme
-  const theme = localStorage.getItem('mk-theme') || 'dark';
+  // Restore theme (protégé si stockage indisponible)
+  const theme = safeStorage.get('mk-theme', 'dark');
   document.documentElement.setAttribute('data-theme', theme);
   updateThemeIcon(theme);
 
   // Restore last section
-  const lastSection = parseInt(localStorage.getItem('mk-last-section') || '0');
-  currentSectionIndex = Math.min(lastSection, appData.sections.length - 1);
+  const lastSection = parseInt(safeStorage.get('mk-last-section', '0'), 10);
+  currentSectionIndex = Math.min(isNaN(lastSection) ? 0 : lastSection, appData.sections.length - 1);
 
   // Restore visited
   try {
-    const visited = JSON.parse(localStorage.getItem('mk-visited') || '[]');
+    const visited = JSON.parse(safeStorage.get('mk-visited', '[]'));
     visited.forEach(i => visitedSections.add(i));
   } catch(e) {}
 
@@ -1449,6 +1492,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Theme toggle
   document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+  // Retour en haut (apparition au scroll du panneau central)
+  const backTop = document.getElementById('back-to-top');
+  const mainEl = document.getElementById('main');
+  if (backTop && mainEl) {
+    mainEl.addEventListener('scroll', () => {
+      backTop.style.display = mainEl.scrollTop > 400 ? 'flex' : 'none';
+    });
+    backTop.addEventListener('click', () => { mainEl.scrollTop = 0; mainEl.focus && mainEl.focus(); });
+  }
+
+  // Echap global : ferme recherche + sidebar mobile
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { closeSidebar(); }
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -1471,7 +1529,11 @@ function buildNav() {
       <span class="nav-step">${s.step}</span>
     `;
     item.addEventListener('click', () => { navigateTo(i); closeSidebar(); });
-    item.addEventListener('keydown', e => { if(e.key === 'Enter') { navigateTo(i); closeSidebar(); }});
+    item.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigateTo(i); closeSidebar(); }
+      if (e.key === 'ArrowDown') { e.preventDefault(); const n = list.children[i + 1]; if (n) n.focus(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); const pr = list.children[i - 1]; if (pr) pr.focus(); }
+    });
     list.appendChild(item);
   });
 }
@@ -1479,11 +1541,9 @@ function buildNav() {
 function navigateTo(index) {
   visitedSections.add(currentSectionIndex);
   currentSectionIndex = index;
-  localStorage.setItem('mk-last-section', index);
+  safeStorage.set('mk-last-section', String(index));
 
-  try {
-    localStorage.setItem('mk-visited', JSON.stringify([...visitedSections]));
-  } catch(e) {}
+  safeStorage.set('mk-visited', JSON.stringify([...visitedSections]));
 
   buildNav();
   renderSection(index);
@@ -1545,9 +1605,9 @@ function renderSection(index) {
     s.cliCommands.forEach((cmd, ci) => {
       html += `
         <div class="cli-block">
-          <pre class="cli-code" id="cli-${index}-${ci}">${escapeHtml(cmd)}</pre>
-          <button class="cli-copy-btn" onclick="copyCommand('cli-${index}-${ci}',this)" title="Copier" aria-label="Copier la commande">
-            <i class="fa-regular fa-copy"></i>
+          <pre class="cli-code"><code class="language-routeros" id="cli-${index}-${ci}">${escapeHtml(cmd)}</code></pre>
+          <button class="cli-copy-btn" onclick="copyCommand('cli-${index}-${ci}',this)" title="Copier" aria-label="Copier la commande ${ci + 1} de la section ${escapeHtml(s.title)}">
+            <i class="fa-regular fa-copy" aria-hidden="true"></i>
           </button>
         </div>
       `;
@@ -1599,6 +1659,7 @@ function renderSection(index) {
   area.innerHTML = html;
   updateGlossary(s.terminology || []);
   updateProgress();
+  highlightCli();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1847,7 +1908,7 @@ function copyCommand(id, btn) {
     btn.classList.add('copied');
     showToast('Commande copiée !', 'success');
     setTimeout(() => {
-      btn.innerHTML = '<i class="fa-regular fa-copy"></i>';
+      btn.innerHTML = '<i class="fa-regular fa-copy" aria-hidden="true"></i>';
       btn.classList.remove('copied');
     }, 2000);
   }).catch(() => {
@@ -1916,8 +1977,16 @@ function setupSearch() {
   });
 }
 
+function escapeRegExp(str) {
+  // Pourquoi : la requête utilisateur est injectée dans new RegExp() ;
+  // sans échappement, des caractères comme [.*+ provoquent une erreur
+  // ou un comportement inattendu (ReDoS / exception SyntaxError).
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function searchContent(query) {
   const q = query.toLowerCase();
+  const qSafe = escapeRegExp(q);
   const results = [];
 
   appData.sections.forEach((s, i) => {
@@ -1934,7 +2003,7 @@ function searchContent(query) {
       const idx = haystack.indexOf(q);
       const start = Math.max(0, idx - 40);
       const raw = haystack.substring(start, idx + q.length + 60);
-      const snippet = '...' + raw.replace(new RegExp(q, 'gi'), m => `<mark>${m}</mark>`) + '...';
+      const snippet = '...' + escapeHtml(raw).replace(new RegExp(qSafe, 'gi'), m => `<mark>${m}</mark>`) + '...';
       results.push({ index: i, title: s.title, snippet });
     }
   });
@@ -1967,7 +2036,7 @@ function toggleTheme() {
   const current = document.documentElement.getAttribute('data-theme');
   const next = current === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('mk-theme', next);
+  safeStorage.set('mk-theme', next);
   updateThemeIcon(next);
   showToast(`Mode ${next === 'dark' ? 'sombre' : 'clair'} activé`, 'info');
 }
@@ -2015,9 +2084,8 @@ function showToast(message, type = 'info') {
 // ═══════════════════════════════════════════════════════════════
 // PDF EXPORT
 // ═══════════════════════════════════════════════════════════════
-function exportPDF() {
-  // Build printable content
-  const printWin = window.open('', '_blank');
+function buildExportHtml() {
+  // Pourquoi : factorisé pour réutilisation popup ET fallback in-page.
   let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
   <title>MikroTik Config Guide — CFP-CMD</title>
   <style>
@@ -2035,35 +2103,50 @@ function exportPDF() {
     .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #ddd; color: #999; font-size: 12px; text-align: center; }
     @media print { h2 { page-break-before: always; } }
   </style></head><body>
-  <h1>🌐 MikroTik Configuration Guide</h1>
+  <h1>MikroTik Configuration Guide</h1>
   <p style="color:#666">CFP-CMD — Centre de Formation Professionnelle Commerce et du Monde Digital<br>
   Généré le : ${new Date().toLocaleDateString('fr-FR', {year:'numeric',month:'long',day:'numeric'})}</p>
   <hr>`;
 
   appData.sections.forEach((s, i) => {
     if (s.cliCommands && s.cliCommands.length === 0 && !s.subsections) return;
-    html += `<h2><span class="badge">Étape ${s.step}</span> ${s.title}</h2>`;
-    html += `<p class="section-desc">${s.description}</p>`;
+    html += `<h2><span class="badge">Étape ${escapeHtml(s.step)}</span> ${escapeHtml(s.title)}</h2>`;
+    html += `<p class="section-desc">${escapeHtml(s.description)}</p>`;
 
     if (s.cliCommands && s.cliCommands.length > 0) {
       html += `<h3>Commandes CLI RouterOS</h3>`;
       s.cliCommands.forEach(cmd => {
-        html += `<pre>${cmd.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>`;
+        html += `<pre>${escapeHtml(cmd)}</pre>`;
       });
     }
 
     if (s.winboxSteps && s.winboxSteps.length > 0) {
       html += `<div class="winbox-section"><h3>Équivalent WinBox</h3><ol>`;
       s.winboxSteps.forEach(step => {
-        html += `<li>${step.replace(/<[^>]*>/g, '')}</li>`;
+        html += `<li>${escapeHtml(step.replace(/<[^>]*>/g, ''))}</li>`;
       });
       html += `</ol></div>`;
     }
   });
 
-  html += `<div class="footer">MikroTik Interactive Guide — CFP-CMD v1.0 — MASTER NMA</div></body></html>`;
+  html += `<div class="footer">MikroTik Interactive Guide — CFP-CMD v1.1 — MASTER NMA</div></body></html>`;
+  return html;
+}
 
-  printWin.document.write(html);
+function exportPDF() {
+  // Pourquoi : window.open() est bloqué par les bloqueurs de popup ;
+  // sans fallback, le bouton semble ne rien faire. On bascule alors sur
+  // l'impression de la page courante (styles @media print déjà prévus).
+  let printWin = null;
+  try { printWin = window.open('', '_blank'); } catch (e) { printWin = null; }
+
+  if (!printWin) {
+    showToast('Popup bloquée — utilisez le dialogue d\u2019impression du navigateur (Ctrl+P)', 'info');
+    window.print();
+    return;
+  }
+
+  printWin.document.write(buildExportHtml());
   printWin.document.close();
   printWin.focus();
   setTimeout(() => {
@@ -2071,6 +2154,22 @@ function exportPDF() {
   }, 500);
 
   showToast('Génération PDF en cours...', 'info');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HIGHLIGHT CLI — coloration syntaxique des blocs RouterOS
+// ═══════════════════════════════════════════════════════════════
+function highlightCli() {
+  // Pourquoi : la lib Highlight.js etait chargee mais jamais appelee ;
+  // sans cet appel, ~30 Ko de JS restaient inutiles. Fallback silencieux
+  // si le CDN est indisponible (mode offline).
+  try {
+    if (window.hljs) {
+      document.querySelectorAll('pre.cli-code code').forEach((el) => {
+        try { hljs.highlightElement(el); } catch (e) { /* bloc suivant */ }
+      });
+    }
+  } catch (e) { /* highlight optionnel */ }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2086,8 +2185,8 @@ function escapeHtml(str) {
 
 <!-- FOOTER -->
 <footer id="footer">
-  <span>MikroTik Interactive Guide · <strong>CFP-CMD</strong> · v1.0 · 2026</span>
-  <span>MASTER NMA — Infrastructure & Sécurité</span>
+  <span>MikroTik Interactive Guide · <strong>CFP-CMD</strong> · v1.1 · 2026</span>
+  <span>MASTER NMA — Infrastructure & Sécurité Réseaux</span>
   <span>
     <a href="https://wiki.mikrotik.com" target="_blank" rel="noopener noreferrer">
       <i class="fa-solid fa-arrow-up-right-from-square"></i> Documentation MikroTik
