@@ -8,7 +8,7 @@
   'use strict';
 
   const MK = window.MK = {
-    version: '1.3.0',
+    version: '2.0.0',
 
     // Parcours (ordre = ordre d'affichage dans la barre latérale).
     // Un parcours sans section n'est pas affiché.
@@ -17,7 +17,8 @@
       { id: 'securite',       label: 'Sécurité avancée',              icon: 'fa-solid fa-shield-halved' },
       { id: 'services',       label: 'Services réseau',               icon: 'fa-solid fa-server' },
       { id: 'interconnexion', label: 'VPN & interconnexion',          icon: 'fa-solid fa-route' },
-      { id: 'exploitation',   label: 'Exploitation & automatisation', icon: 'fa-solid fa-gears' }
+      { id: 'exploitation',   label: 'Exploitation & automatisation', icon: 'fa-solid fa-gears' },
+      { id: 'labs',           label: 'Labs & évaluation',             icon: 'fa-solid fa-flask' }
     ],
 
     levels: {
@@ -34,6 +35,8 @@
     sections: [],   // rempli par addSections()
     glossary: {},   // rempli par addGlossary()
     diagrams: {},   // rempli par addDiagrams() : { type: (section) => '<svg…>' }
+    quiz: {},       // banque de questions par section : { idSection: [[question, [options], indexBonneReponse, explication], …] }
+    tools: {},      // outils interactifs rattachés à une section (champ `tool`) : { id: { title, mount(host) } }
 
     addSections(list) {
       list.forEach((s) => {
@@ -43,6 +46,8 @@
       });
     },
     addGlossary(obj)  { Object.assign(MK.glossary, obj); },
-    addDiagrams(obj)  { Object.assign(MK.diagrams, obj); }
+    addDiagrams(obj)  { Object.assign(MK.diagrams, obj); },
+    addTool(id, def)  { MK.tools[id] = def; },
+    addQuiz(obj)      { Object.keys(obj).forEach((k) => { MK.quiz[k] = (MK.quiz[k] || []).concat(obj[k]); }); }
   };
 })();

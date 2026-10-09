@@ -61,6 +61,20 @@ function toStoredId(v) {
   return String(v);
 }
 
+// Cases à cocher des labs (critères de réussite) : { idSection: [0|1, …] }
+function getChecks(id) {
+  try { const all = JSON.parse(safeStorage.get('mk-checks', '{}')); return Array.isArray(all[id]) ? all[id] : []; }
+  catch (e) { return []; }
+}
+function setCheck(id, idx, val) {
+  let all = {};
+  try { all = JSON.parse(safeStorage.get('mk-checks', '{}')) || {}; } catch (e) { all = {}; }
+  const cur = Array.isArray(all[id]) ? all[id] : [];
+  cur[idx] = val ? 1 : 0;
+  all[id] = cur;
+  safeStorage.set('mk-checks', JSON.stringify(all));
+}
+
 function persistState() {
   safeStorage.set('mk-last-section', appData.sections[currentSectionIndex].id);
   safeStorage.set('mk-visited', JSON.stringify([...visitedSections]));
@@ -107,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (start < 0) start = sectionIndexById(toStoredId(safeStorage.get('mk-last-section', null)));
   if (start < 0) start = 0;
 
+  registerOffline();
   setupSearch();
   setupEvents();
   navigateTo(start, { silentHash: false });
@@ -116,6 +131,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (i >= 0 && i !== currentSectionIndex) navigateTo(i);
   });
 });
+
+// ═══════════════════════════════════════════════════════════════
+// MODE HORS LIGNE — service worker (sw.js, généré par tools/build-sw.js)
+// Actif uniquement en HTTPS ou sur localhost ; ignoré en file://
+// ═══════════════════════════════════════════════════════════════
+function registerOffline() {
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      if (!safeStorage.get('mk-offline-ready') && reg) {
+        navigator.serviceWorker.ready.then(() => {
+          safeStorage.set('mk-offline-ready', '1');
+          showToast('Mode hors ligne activé : le guide reste disponible sans connexion', 'success');
+        });
+      }
+    }).catch(() => { /* échec silencieux : le guide fonctionne sans cache */ });
+  }
+  window.addEventListener('offline', () => showToast('Hors ligne : le guide reste utilisable', 'info'));
+  window.addEventListener('online', () => showToast('Connexion rétablie', 'success'));
+}
 
 function setupEvents() {
   // Mobile menu / thème / PDF
@@ -157,6 +191,21 @@ function setupEvents() {
     const all = e.target.closest('[data-copy-all]');
     if (all) { copyAllCommands(parseInt(all.dataset.copyAll, 10)); return; }
     if (e.target.closest('[data-action="done"]')) showToast('🎉 Guide terminé — pensez à sauvegarder votre configuration !', 'success');
+  });
+
+  // Cases à cocher des labs : mémorisation par section et par critère
+  document.getElementById('content-area').addEventListener('change', (e) => {
+    const cb = e.target.closest('[data-check]');
+    if (!cb) return;
+    setCheck(appData.sections[currentSectionIndex].id, parseInt(cb.dataset.check, 10), cb.checked);
+    const box = cb.closest('.checklist');
+    if (box) {
+      const all = box.querySelectorAll('[data-check]');
+      const done = [...all].filter((x) => x.checked).length;
+      const card = box.closest('.card');
+      const counter = card ? card.querySelector('.checklist-count') : null;
+      if (counter) counter.textContent = done + ' / ' + all.length;
+    }
   });
 
   // Résultats de recherche : délégation
@@ -292,6 +341,12 @@ function renderSection(index) {
     });
   }
 
+  // Outil interactif (ex. générateur .rsc) : l'emplacement est créé ici, l'outil est monté après le rendu
+  const toolDef = s.tool && MK.tools ? MK.tools[s.tool] : null;
+  if (toolDef) {
+    html += `<div class="card tool-card"><div class="card-header"><div class="card-header-icon icon-cli"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i></div><span class="card-header-title">${toolDef.title}</span></div><div class="card-body"><div id="tool-host"></div></div></div>`;
+  }
+
   // Subsections (intro)
   if (s.subsections) {
     s.subsections.forEach(sub => {
@@ -354,6 +409,30 @@ function renderSection(index) {
     html += `</div></div>`;
   }
 
+  // Déroulé pas à pas (labs) : le HTML provient des données ; les liens #id restent internes au guide
+  if (s.steps && s.steps.length > 0) {
+    html += `<div class="card"><div class="card-header"><div class="card-header-icon icon-winbox"><i class="fa-solid fa-list-ol" aria-hidden="true"></i></div><span class="card-header-title" style="color:var(--blue)">Déroulé pas à pas</span></div><div class="card-body"><ol class="winbox-steps">`;
+    s.steps.forEach((st) => { html += `<li><div class="step-text">${st}</div></li>`; });
+    html += `</ol></div></div>`;
+  }
+
+  // Critères de réussite (labs) : cases à cocher mémorisées
+  if (s.checklist && s.checklist.length > 0) {
+    const saved = getChecks(s.id);
+    const done = s.checklist.filter((_, i) => saved[i]).length;
+    html += `<div class="card"><div class="card-header"><div class="card-header-icon icon-concept"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i></div><span class="card-header-title">Critères de réussite</span><span class="checklist-count">${done} / ${s.checklist.length}</span></div><div class="card-body"><ul class="checklist">`;
+    s.checklist.forEach((c, i) => {
+      html += `<li><label><input type="checkbox" data-check="${i}" ${saved[i] ? 'checked' : ''} /> <span>${c}</span></label></li>`;
+    });
+    html += `</ul></div></div>`;
+  }
+
+  // Quiz de la section (moteur : js/quiz.js)
+  const hasQuiz = !!(MK.quiz && MK.quiz[s.id] && MK.quiz[s.id].length && MK.quizUI);
+  if (hasQuiz) {
+    html += `<div class="card"><div class="card-header"><div class="card-header-icon icon-concept"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></div><span class="card-header-title">Quiz de la section</span></div><div class="card-body"><div id="quiz-host"></div></div></div>`;
+  }
+
   // Navigation buttons
   html += `<div class="nav-btns">`;
   if (index > 0) {
@@ -369,6 +448,8 @@ function renderSection(index) {
   html += `</div>`;
 
   area.innerHTML = html;
+  if (toolDef) toolDef.mount(document.getElementById('tool-host'));
+  if (hasQuiz) MK.quizUI.mountSection(document.getElementById('quiz-host'), s.id);
   updateGlossary(s.terminology || []);
   updateProgress();
   highlightCli();
@@ -614,13 +695,13 @@ function buildExportHtml() {
     .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #ddd; color: #999; font-size: 12px; text-align: center; }
     @media print { h2 { page-break-before: always; } }
   </style></head><body>
-  <h1>MikroTik Configuration Guide</h1>
+  <h1><img src="${new URL('assets/web-app-manifest-192x192.png', location.href).href}" alt="" width="56" height="56" style="vertical-align:middle;margin-right:12px">MikroTik Configuration Guide</h1>
   <p style="color:#666">CFP-CMD — Centre de Formation Professionnelle Commerce et du Monde Digital<br>
   Généré le : ${new Date().toLocaleDateString('fr-FR', {year:'numeric',month:'long',day:'numeric'})}</p>
   <hr>`;
 
   appData.sections.forEach((s, i) => {
-    if (s.cliCommands && s.cliCommands.length === 0 && !s.subsections) return;
+    if (s.cliCommands && s.cliCommands.length === 0 && !s.subsections && !s.steps) return;
     html += `<h2><span class="badge">Étape ${escapeHtml(s.step)}</span> ${escapeHtml(s.title)} <small style="font-weight:normal;color:#777">— ${escapeHtml(trackLabel(s.track))} · ${escapeHtml(levelLabel(s.level))}</small></h2>`;
     html += `<p class="section-desc">${escapeHtml(s.description)}</p>`;
 
@@ -629,6 +710,17 @@ function buildExportHtml() {
       s.cliCommands.forEach(cmd => {
         html += `<pre>${escapeHtml(cmd)}</pre>`;
       });
+    }
+
+    if (s.steps && s.steps.length > 0) {
+      html += `<div class="winbox-section"><h3>Déroulé pas à pas</h3><ol>`;
+      s.steps.forEach(step => { html += `<li>${escapeHtml(step.replace(/<[^>]*>/g, ''))}</li>`; });
+      html += `</ol></div>`;
+    }
+    if (s.checklist && s.checklist.length > 0) {
+      html += `<div class="winbox-section"><h3>Critères de réussite</h3><ol>`;
+      s.checklist.forEach(c => { html += `<li>${escapeHtml(String(c).replace(/<[^>]*>/g, ''))}</li>`; });
+      html += `</ol></div>`;
     }
 
     if (s.winboxSteps && s.winboxSteps.length > 0) {

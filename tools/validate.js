@@ -54,6 +54,8 @@ for (const s of MK.sections) {
     else if (!/<svg/.test(out)) warn(`${s.id}: schéma « ${s.diagram} » sans SVG`);
   }
 
+  if (s.tool && !(MK.tools && MK.tools[s.tool])) err(`${s.id}: outil « ${s.tool} » introuvable`);
+
   for (const r of s.requires || []) {
     if (!ids.has(r) && !MK.sections.some((x) => x.id === r)) err(`${s.id}: prérequis inconnu « ${r} »`);
     else if (order.indexOf(r) > order.indexOf(s.id)) warn(`${s.id}: le prérequis « ${r} » est placé APRÈS la section`);
@@ -86,6 +88,61 @@ for (const s of MK.sections) {
     // continuation « \ » suivie d'une ligne vide
     if (/\\\n\s*\n/.test(cmd)) err(`${tag}: continuation « \\ » suivie d'une ligne vide`);
   });
+}
+
+// Banque de questions : cohérence et couverture
+console.log('\nQuiz');
+let nQ = 0;
+for (const [sid, qs] of Object.entries(MK.quiz)) {
+  if (!MK.sections.some((x) => x.id === sid)) err(`quiz : section inconnue « ${sid} »`);
+  qs.forEach((q, i) => {
+    nQ++;
+    const tag = `quiz ${sid} #${i + 1}`;
+    if (!Array.isArray(q) || q.length < 4) return err(`${tag}: format [question, options, index, explication] attendu`);
+    const [text, opts, ans, why] = q;
+    if (!text || typeof text !== 'string') err(`${tag}: question vide`);
+    if (!Array.isArray(opts) || opts.length < 3 || opts.length > 5) err(`${tag}: 3 à 5 options attendues`);
+    else {
+      if (new Set(opts).size !== opts.length) err(`${tag}: options en double`);
+      if (!Number.isInteger(ans) || ans < 0 || ans >= opts.length) err(`${tag}: index de bonne réponse invalide`);
+    }
+    if (!why || why.length < 15) err(`${tag}: explication manquante ou trop courte`);
+  });
+}
+for (const s of MK.sections) {
+  if (s.track === 'labs') continue;
+  const n = (MK.quiz[s.id] || []).length;
+  if (n < 2) err(`${s.id}: au moins 2 questions de quiz attendues (${n})`);
+}
+console.log(`  ${nQ} questions pour ${Object.keys(MK.quiz).length} sections`);
+
+// Labs : liens internes et critères
+for (const s of MK.sections) {
+  for (const html of [...(s.steps || []), ...(s.checklist || [])]) {
+    for (const m of String(html).matchAll(/href="#([^"]+)"/g)) {
+      if (!MK.sections.some((x) => x.id === m[1])) err(`${s.id}: lien interne vers « #${m[1]} » introuvable`);
+    }
+  }
+  if (s.track === 'labs' && s.tool == null && !(s.checklist && s.checklist.length)) err(`${s.id}: un lab doit avoir des critères de réussite`);
+}
+
+// Marque, PWA et mode hors ligne
+console.log('\nMarque et mode hors ligne');
+const manifest = JSON.parse(fs.readFileSync(path.join(root, 'site.webmanifest'), 'utf8'));
+for (const ic of manifest.icons || []) if (!fs.existsSync(path.join(root, ic.src))) err(`manifeste : icône absente ${ic.src}`);
+for (const m of html.matchAll(/(?:href|src)="(assets\/[^"]+)"/g)) if (!fs.existsSync(path.join(root, m[1]))) err(`index.html : fichier absent ${m[1]}`);
+if (!/rel="manifest"/.test(html)) err('index.html : lien vers le manifeste absent');
+if (!/rel="icon"/.test(html)) err('index.html : favicon absent');
+const csp = (/http-equiv="Content-Security-Policy"\s+content="([^"]+)"/.exec(html) || [])[1] || '';
+if (!csp) err('CSP : balise meta absente');
+else if (/(^|;)\s*script-src[^;]*unsafe-inline/.test(csp)) err('CSP : unsafe-inline autorisé pour les scripts');
+try { require('child_process').execFileSync(process.execPath, [path.join(__dirname, 'build-sw.js'), '--check'], { stdio: 'pipe' }); console.log('  sw.js à jour'); }
+catch (e) { err('sw.js périmé : lancez  node tools/build-sw.js'); }
+
+// Le glossaire est rendu en HTML : un <PLACEHOLDER> brut y serait avalé par le navigateur
+for (const [t, d] of Object.entries(MK.glossary)) {
+  const m = String(d).match(/<[A-Z_][A-Z0-9_]{2,}>/g);
+  if (m) err(`glossaire « ${t} » : placeholder HTML non échappé ${m.join(', ')}`);
 }
 
 // Définitions de glossaire orphelines (info)
