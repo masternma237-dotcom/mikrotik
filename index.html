@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- CSP v1.2 : plus aucun script inline → 'unsafe-inline' retiré de script-src.
+       'unsafe-inline' reste nécessaire pour style-src (attributs style="…" générés). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data:; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; object-src 'none'; base-uri 'self';" />
+  <title>MikroTik Config Guide — CFP-CMD</title>
+  <meta name="theme-color" content="#08111f" />
+  <meta name="description" content="Guide interactif de configuration MikroTik RouterOS — CFP-CMD" />
+
+  <!-- Icônes et application installable (PWA) -->
+  <link rel="icon" href="assets/favicon.ico" sizes="48x48" />
+  <link rel="icon" type="image/png" sizes="96x96" href="assets/favicon-96x96.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png" />
+  <link rel="manifest" href="site.webmanifest" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Barlow:wght@300;400;600&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome (SRI à épingler après téléchargement local ; crossorigin déjà actif) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" />
+
+  <!-- Highlight.js (SRI à épingler après téléchargement local ; crossorigin déjà actif) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" crossorigin="anonymous" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" crossorigin="anonymous" defer></script>
+
+  <!-- Styles de l'application -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+<a class="skip-link" href="#main">Aller au contenu principal</a>
+<!-- HEADER -->
+<header id="header">
+  <div class="header-logo">
+    <img class="logo-img" src="assets/favicon-96x96.png" alt="Logo du guide MikroTik" width="40" height="40" />
+    <div>
+      <div class="logo-text">MikroTik Guide</div>
+      <span class="logo-sub">CFP-CMD · <span id="app-version">v2.0</span></span>
+    </div>
+  </div>
+
+  <div class="header-search">
+    <input type="text" id="search-input" placeholder="Rechercher commandes, concepts..." autocomplete="off" aria-label="Rechercher dans le guide" aria-expanded="false" aria-controls="search-results" />
+    <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+  </div>
+  <div id="search-results" role="status" aria-live="polite"></div>
+
+  <div class="header-actions">
+    <button class="btn-icon" id="mobile-menu-btn" title="Menu" aria-label="Ouvrir menu">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <button class="btn-icon" id="theme-toggle" title="Mode sombre/clair" aria-label="Basculer thème">
+      <i class="fa-solid fa-moon"></i>
+    </button>
+    <button class="btn-pdf" id="pdf-btn" type="button">
+      <i class="fa-solid fa-file-pdf"></i>
+      <span>Exporter PDF</span>
+    </button>
+  </div>
+</header>
+
+<!-- PROGRESS -->
+<div id="progress-bar-container">
+  <div id="progress-bar"></div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- LEFT SIDEBAR -->
+  <nav id="sidebar" aria-label="Navigation sections">
+    <div class="sidebar-label"><i class="fa-solid fa-list-check"></i> Navigation</div>
+    <div id="level-filter" class="level-filter" role="group" aria-label="Filtrer par niveau">
+      <button type="button" data-level="all" aria-pressed="true">Tous</button>
+      <button type="button" data-level="debutant" aria-pressed="false"><span class="level-dot level-debutant" aria-hidden="true"></span>Débutant</button>
+      <button type="button" data-level="intermediaire" aria-pressed="false"><span class="level-dot level-intermediaire" aria-hidden="true"></span>Interm.</button>
+      <button type="button" data-level="avance" aria-pressed="false"><span class="level-dot level-avance" aria-hidden="true"></span>Avancé</button>
+    </div>
+    <div id="nav-list"></div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main id="main" role="main" tabindex="-1">
+    <div class="content-wrapper" id="content-area"></div>
+  </main>
+
+  <!-- RIGHT GLOSSARY -->
+  <aside id="glossary-panel" aria-label="Glossaire contextuel">
+    <div class="glossary-title"><i class="fa-solid fa-book"></i> Glossaire</div>
+    <div id="glossary-content"></div>
+  </aside>
+</div>
+
+<!-- SIDEBAR OVERLAY (mobile) -->
+<div id="sidebar-overlay"></div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container" role="status" aria-live="polite"></div>
+
+<!-- Bouton retour en haut (accessibilité + mobile) -->
+<button id="back-to-top" class="btn-icon" title="Retour en haut" aria-label="Retour en haut" style="position:fixed;right:16px;bottom:16px;z-index:180;display:none;"><i class="fa-solid fa-arrow-up"></i></button>
+
+<!-- FOOTER -->
+<footer id="footer">
+  <span>MikroTik Interactive Guide · <strong>CFP-CMD</strong> · <span id="footer-version">v2.0</span> · 2026</span>
+  <span>MASTER NMA — Infrastructure &amp; Sécurité Réseaux</span>
+  <span>
+    <a href="https://wiki.mikrotik.com" target="_blank" rel="noopener noreferrer">
+      <i class="fa-solid fa-arrow-up-right-from-square"></i> Documentation MikroTik
+    </a>
+  </span>
+</footer>
+
+<!-- ═══ SCRIPTS — ORDRE IMPORTANT ═══
+     1) registre  2) données (une balise par module)  3) schémas  4) moteur -->
+<script src="js/registry.js"></script>
+<!-- Outils interactifs (s'enregistrent via MK.addTool) -->
+<script src="js/tools/rsc-generator.js"></script>
+<script src="js/quiz.js"></script>
+
+<!-- Parcours Socle -->
+<script src="data/core.js"></script>
+<script src="data/glossary-core.js"></script>
+<script src="data/diagrams-core.js"></script>
+
+<!-- Parcours Sécurité avancée (v1.2) -->
+<script src="data/securite-1.js"></script>
+<script src="data/securite-2.js"></script>
+<script src="data/glossary-securite.js"></script>
+<script src="data/diagrams-securite.js"></script>
+<!-- Parcours Services réseau (v1.3) -->
+<script src="data/services-1.js"></script>
+<script src="data/services-2.js"></script>
+<script src="data/services-3.js"></script>
+<script src="data/glossary-services.js"></script>
+<script src="data/diagrams-services.js"></script>
+<!-- Parcours VPN & interconnexion (v1.4) -->
+<script src="data/interconnexion-1.js"></script>
+<script src="data/interconnexion-2.js"></script>
+<script src="data/interconnexion-3.js"></script>
+<script src="data/glossary-interconnexion.js"></script>
+<script src="data/diagrams-interconnexion.js"></script>
+<!-- Parcours Exploitation & automatisation (v1.5) -->
+<script src="data/exploitation-1.js"></script>
+<script src="data/exploitation-2.js"></script>
+<script src="data/glossary-exploitation.js"></script>
+<script src="data/diagrams-exploitation.js"></script>
+<!-- Lot v2.0 : labs, glossaire et schémas complémentaires, banques de questions -->
+<script src="data/labs.js"></script>
+<script src="data/glossary-v2.js"></script>
+<script src="data/diagrams-v2.js"></script>
+<script src="data/quiz-socle.js"></script>
+<script src="data/quiz-securite.js"></script>
+<script src="data/quiz-services.js"></script>
+<script src="data/quiz-interconnexion.js"></script>
+<script src="data/quiz-exploitation.js"></script>
+
+<script src="js/diagrams.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

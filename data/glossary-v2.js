@@ -1,0 +1,27 @@
+// Glossaire — termes du lot v2.0 (routage dynamique, CAPsMAN, labs, évaluation)
+MK.addGlossary({
+  "CHR": "Cloud Hosted Router — version de RouterOS pour machines virtuelles, gratuite avec un débit limité ; idéale pour un laboratoire.",
+  "Proxmox VE": "Plateforme libre de virtualisation (KVM et conteneurs) administrée par interface web ou ligne de commande (qm, pvesh).",
+  "Modèle de VM (template)": "Machine virtuelle figée servant de base : on la clone pour créer rapidement plusieurs machines identiques.",
+  "Snapshot": "Instantané qui fige l'état d'une machine virtuelle pour y revenir (rollback) en quelques secondes après un essai raté.",
+  "Évaluation formative": "Évaluation destinée à apprendre et à repérer ses lacunes plutôt qu'à sanctionner ; elle s'accompagne d'explications.",
+  "OSPF": "Open Shortest Path First — protocole de routage dynamique interne qui échange l'état des liens et calcule le plus court chemin (IP protocole 89).",
+  "Zone OSPF (area)": "Découpage logique d'un réseau OSPF ; la zone 0 (backbone) relie toutes les autres.",
+  "Router-ID": "Identifiant unique d'un routeur dans un protocole de routage, souvent l'adresse d'une interface de bouclage.",
+  "Interface passive": "Interface dont le réseau est annoncé par le protocole de routage mais sur laquelle aucun paquet du protocole n'est émis.",
+  "Voisin OSPF": "Routeur avec lequel une adjacence est établie ; l'état Full indique que les bases de données sont synchronisées.",
+  "Loopback": "Interface logique toujours active (adresse /32) utilisée comme identifiant stable d'un routeur.",
+  "BGP": "Border Gateway Protocol — protocole de routage entre systèmes autonomes qui constitue le routage d'Internet (TCP 179).",
+  "Système autonome (AS)": "Ensemble de réseaux sous une même administration, identifié par un numéro (plage privée : 64512 à 65534).",
+  "eBGP / iBGP": "eBGP relie des systèmes autonomes différents ; iBGP relie des routeurs du même système autonome.",
+  "Préfixe": "Réseau IP annoncé ou routé, écrit adresse/longueur (ex. 192.168.10.0/24).",
+  "Filtre de routes": "Règle qui accepte, refuse ou modifie des routes annoncées ou reçues ; indispensable en BGP avec un opérateur.",
+  "Session BGP": "Connexion TCP entre deux voisins BGP ; l'état established indique que les annonces sont échangées.",
+  "CAPsMAN": "Controlled Access Point system Manager — gestion centralisée de la configuration Wi-Fi de plusieurs bornes MikroTik.",
+  "CAP": "Controlled Access Point — borne Wi-Fi qui reçoit sa configuration d'un contrôleur CAPsMAN.",
+  "Datapath": "Profil CAPsMAN qui décrit le traitement du trafic des clients (pont, VLAN, transmission locale).",
+  "Provisionnement": "Règle CAPsMAN qui dit comment configurer automatiquement une borne qui se connecte.",
+  "Port hybride": "Port qui transporte un VLAN sans tag (natif) et un ou plusieurs VLANs avec tag.",
+  "Local forwarding": "Mode où la borne place elle-même les clients dans le réseau local au lieu de renvoyer le trafic au contrôleur.",
+  "CAPWAP": "Protocole de contrôle et de provisionnement des bornes Wi-Fi (UDP 5246 et 5247 sur MikroTik)."
+});
