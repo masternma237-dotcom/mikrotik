@@ -7,7 +7,11 @@
        'unsafe-inline' reste nécessaire pour style-src (attributs style="…" générés). -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data:; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; object-src 'none'; base-uri 'self';" />
   <title>MikroTik Config Guide — CFP-CMD</title>
-  <meta name="theme-color" content="#08111f" />
+  
+  <meta name="msapplication-TileColor" content="#08111f" />
+  <link rel="mask-icon" href="assets/safari-pinned-tab.svg" color="#08111f" />
+<meta name="msapplication-navbutton-color" content="#08111f" />
+<meta name="apple-mobile-web-app-status-bar-style" content="#08111f" />
   <meta name="description" content="Guide interactif de configuration MikroTik RouterOS — CFP-CMD" />
 
   <!-- Icônes et application installable (PWA) -->
@@ -38,13 +42,13 @@
   <div class="header-logo">
     <img class="logo-img" src="assets/favicon-96x96.png" alt="Logo du guide MikroTik" width="40" height="40" />
     <div>
-      <div class="logo-text">MikroTik Guide</div>
+      <div class="logo-text">Routeur Mikrotik</div>
       <span class="logo-sub">CFP-CMD · <span id="app-version">v2.0</span></span>
     </div>
   </div>
 
   <div class="header-search">
-    <input type="text" id="search-input" placeholder="Rechercher commandes, concepts..." autocomplete="off" aria-label="Rechercher dans le guide" aria-expanded="false" aria-controls="search-results" />
+    <input type="text" id="search-input" placeholder="Rechercher commandes, concepts..." autocomplete="off" aria-label="Rechercher dans le guide" aria-controls="search-results" />
     <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
   </div>
   <div id="search-results" role="status" aria-live="polite"></div>
@@ -101,11 +105,11 @@
 <div id="toast-container" role="status" aria-live="polite"></div>
 
 <!-- Bouton retour en haut (accessibilité + mobile) -->
-<button id="back-to-top" class="btn-icon" title="Retour en haut" aria-label="Retour en haut" style="position:fixed;right:16px;bottom:16px;z-index:180;display:none;"><i class="fa-solid fa-arrow-up"></i></button>
+<button id="back-to-top" type="button" class="btn-icon" title="Retour en haut" aria-label="Retour en haut"><i class="fa-solid fa-arrow-up"></i></button>
 
 <!-- FOOTER -->
 <footer id="footer">
-  <span>MikroTik Interactive Guide · <strong>CFP-CMD</strong> · <span id="footer-version">v2.0</span> · 2026</span>
+  <span>MikroTik Router - Interactive Guide · <strong>CFP-CMD</strong> · <span id="footer-version">v2.0</span> · 2026</span>
   <span>MASTER NMA — Infrastructure &amp; Sécurité Réseaux</span>
   <span>
     <a href="https://wiki.mikrotik.com" target="_blank" rel="noopener noreferrer">
