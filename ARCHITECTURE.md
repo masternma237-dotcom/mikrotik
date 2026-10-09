@@ -63,7 +63,7 @@ tools/validate.js       contrôle de cohérence des données (node tools/validat
 | Lot | Fichiers prévus | Contenu |
 |---|---|---|
 | v1.2 ✔ | `securite-*.js` | Safe Mode, anti-brute force, RAW, anti-scan/DoS, durcissement, sauvegarde auto |
-| v1.3 | `services.js` | NAT avancé, DNS, NTP, DHCP avancé, QoS (simple queue + PCQ) |
+| v1.3 ✔ | `services-*.js` | NAT avancé, DNS, NTP, DHCP avancé, QoS (simple queue + PCQ) |
 | v1.4 | `interconnexion.js` | WireGuard, IPsec, failover / multi-WAN |
 | v1.5 | `exploitation.js` | Logs / syslog, SNMP + Zabbix, API REST, générateur .rsc |
 | v2.0 | plusieurs | Labs, quiz, mode hors ligne (service worker), OSPF/BGP, CAPsMAN |

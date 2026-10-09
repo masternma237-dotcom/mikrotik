@@ -3,6 +3,36 @@
 Toutes les modifications notables de ce projet sont documentées ici.
 Format inspiré de Keep a Changelog. Dates au format JJ/MM/AAAA.
 
+## [1.3.0] — 07/10/2026 — Lot v1.3 « Services réseau »
+
+### Contenu — 6 nouvelles sections (parcours « Services réseau »)
+- 17 NAT avancé : dst-nat + règle FORWARD (connection-nat-state=dstnat), hairpin NAT,
+  src-nat pour WAN statique, netmap (NAT 1:1), diagnostic ; alerte CGNAT (4G / radio).
+- 18 DNS local : résolveur + cache, noms et alias locaux, redirection de domaine
+  (type FWD, Active Directory), blocage par regexp, DNS forcé, blocage DoT, résolveur
+  fermé au WAN (réactive allow-remote-requests désactivé en section 15).
+- 19 NTP : client + serveur du LAN, option DHCP 42 (jeux d'options par VLAN),
+  redirection NTP optionnelle, avertissement pour les machines de domaine.
+- 20 DHCP avancé : réservations, options 66 et 121, alerte faux serveur DHCP,
+  address-list des clients, ARP reply-only sur le VLAN IT, relais DHCP.
+- 21 QoS : Simple Queues, hiérarchie parent/enfant, burst, priorités, débits par
+  profil Hotspot.
+- 22 QoS avancé : PCQ, marquage VoIP (mangle), Queue Tree en sortie WAN, FastTrack.
+- 6 schémas SVG et 28 termes de glossaire associés (117 termes au total).
+
+### Cohérence avec les lots précédents
+- Les commandes réutilisent les objets existants : vlan10-IT / vlan20-Hotspot,
+  dhcp-vlan10 / dhcp-vlan20, listes LAN/WAN (section 13), règles commentées
+  « Drop tout autre INPUT » et « Drop forward non autorisé ».
+- Chaque section déclare ses prérequis (`requires`) ; le validateur les contrôle.
+
+### Tests
+- Validateur : 0 erreur, 0 avertissement (23 sections).
+- 41 contrôles navigateur (http:// et file://) rejoués, nombre de sections et de
+  parcours désormais calculés dynamiquement.
+- Non testé sur routeur réel : à valider en laboratoire (CHR sur Proxmox VE).
+  Les exemples « fictifs » (vlan30-..., netmap, relais DHCP) sont signalés dans le texte.
+
 ## [1.2.0] — 07/10/2026 — Lot v1.2 « Sécurité avancée » + architecture modulaire
 
 ### Architecture (découpage annoncé dans le rapport d'étude)
