@@ -188,13 +188,6 @@ body {
   color: var(--accent);
   background: var(--accent-glow);
 }
-#back-to-top {
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  z-index: 180;
-  display: none;
-}
 
 .btn-pdf {
   display: flex;

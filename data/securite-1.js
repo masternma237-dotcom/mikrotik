@@ -195,12 +195,14 @@
       requires: ["firewall", "bruteforce"],
       description: "La table RAW s'exécute AVANT le suivi de connexions : jeter tôt les paquets manifestement hostiles ou forgés économise du CPU et réduit la surface d'attaque. On y place les listes noires, les drapeaux TCP invalides, l'anti-spoofing par VLAN et les bogons côté WAN.",
       cliCommands: [
-        R`# 1. Listes d'interfaces LAN / WAN (réutilisées par les règles suivantes)
-/interface list add name=LAN
-/interface list add name=WAN
-/interface list member add list=LAN interface=vlan10-IT
-/interface list member add list=LAN interface=vlan20-Hotspot
-/interface list member add list=WAN interface=ether1`,
+        R`# 1. Listes d'interfaces LAN / WAN : déjà créées à la section 05 (depuis la v2.0.1) — vérifier qu'elles existent
+/interface list member print
+# Si vous partez d'une configuration antérieure à la v2.0.1, créez-les :
+# /interface list add name=LAN
+# /interface list add name=WAN
+# /interface list member add list=LAN interface=vlan10-IT
+# /interface list member add list=LAN interface=vlan20-Hotspot
+# /interface list member add list=WAN interface=ether1`,
 
         R`# 2. Liste blanche et listes noires (alimentées par les sections 12 et 14)
 /ip firewall raw add chain=prerouting src-address-list=admin_whitelist action=accept comment="RAW: whitelist admin"
@@ -260,7 +262,7 @@
 /ip firewall raw enable [find where comment~"drop bogons WAN"]`
       ],
       winboxSteps: [
-        "<span class='wb-path'>Interfaces → Interface List → Lists → [+]</span> → créer <code>LAN</code> et <code>WAN</code>, puis onglet <code>Interface List</code> pour ajouter les membres",
+        "<span class='wb-path'>Interfaces → Interface List</span> → vérifier que les listes <code>LAN</code> et <code>WAN</code> (créées à la section 05) contiennent bien leurs membres",
         "<span class='wb-path'>IP → Firewall → RAW → [+]</span> → Chain = <code>prerouting</code>, Src. Address List = <code>admin_whitelist</code>, Action = accept",
         "Une règle par liste noire : Src. Address List = <code>ssh_blacklist</code> (puis winbox_blacklist, port_scanners, ddos_attackers), Action = drop",
         "Drapeaux TCP : Protocol = tcp, TCP Flags = <code>fin,syn</code> (puis les autres combinaisons du tableau), Action = drop",

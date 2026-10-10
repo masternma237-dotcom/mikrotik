@@ -51,7 +51,7 @@ MK.addSections([
         "# 1. Créer un nouvel utilisateur administrateur\n# ⚠️ Remplacez <MOT_DE_PASSE_FORT> par un mot de passe robuste et unique\n/user add name=adm_network group=full password=<MOT_DE_PASSE_FORT>",
         "# 2. Désactiver le compte admin par défaut\n/user set admin disabled=yes",
         "# 3. Désactiver les services inutiles\n/ip service disable telnet,ftp,www,api,api-ssl",
-        "# 4. Restreindre SSH et WinBox à un sous-réseau\n/ip service set ssh address=192.168.88.0/24 port=22\n/ip service set winbox address=192.168.88.0/24",
+        "# 4. Restreindre SSH et WinBox aux réseaux d'administration\n# 192.168.88.0/24 = réseau d'usine (accès actuel) · 192.168.10.0/24 = VLAN IT créé aux sections 04 et 05\n# Sans le second réseau, l'administration depuis le VLAN IT serait refusée par les services eux-mêmes\n/ip service set ssh address=192.168.88.0/24,192.168.10.0/24 port=22\n/ip service set winbox address=192.168.88.0/24,192.168.10.0/24",
         "# 5. Protection brute-force SSH\n/ip ssh set strong-crypto=yes",
         "# 6. Définir le nom d'hôte\n/system identity set name=MK-CFP-CMD"
       ],
@@ -60,7 +60,7 @@ MK.addSections([
         "Renseigner : Name = <code>adm_network</code>, Group = <code>full</code>, Password = mot de passe fort",
         "<span class='wb-path'>System → Users</span> → Double-clic sur <code>admin</code> → Cocher Disabled",
         "<span class='wb-path'>IP → Services</span> → Désactiver Telnet, FTP, www, api",
-        "<span class='wb-path'>IP → Services → SSH</span> → Saisir l'adresse autorisée dans le champ Available From",
+        "<span class='wb-path'>IP → Services → SSH</span> → Saisir les réseaux autorisés (<code>192.168.88.0/24</code> et <code>192.168.10.0/24</code>) dans Available From ; idem pour WinBox",
         "<span class='wb-path'>System → Identity</span> → Modifier le nom du routeur"
       ],
       diagram: "securing",
@@ -73,7 +73,7 @@ MK.addSections([
       alerts: [
         { type: "warning", icon: "fa-triangle-exclamation", text: "Déconnectez-vous APRÈS avoir vérifié que le nouvel utilisateur fonctionne. Ne jamais désactiver admin avant de valider le nouveau compte !" },
         { type: "warning", icon: "fa-key", text: "Les mots de passe de ce guide sont des PLACEHOLDERS (&lt;MOT_DE_PASSE_FORT&gt;, &lt;CLE_WIFI_FORTE&gt;). Remplacez-les systématiquement avant toute mise en production." },
-        { type: "info", icon: "fa-circle-info", text: "WinBox se reconnecte automatiquement. Assurez-vous que votre IP est dans le sous-réseau autorisé avant de restreindre les services." }
+        { type: "info", icon: "fa-circle-info", text: "WinBox se reconnecte automatiquement. Assurez-vous que votre poste appartient à l'un des réseaux autorisés (192.168.88.0/24 pour l'accès actuel, 192.168.10.0/24 pour le VLAN IT) avant de restreindre les services. La liste sera resserrée à la section 10, une fois l'administration passée sur le VLAN IT." }
       ]
     },
     {
@@ -83,11 +83,11 @@ MK.addSections([
       title: "Bridge & Assignation des Ports",
       icon: "fa-solid fa-circle-nodes",
       step: "02",
-      description: "Un bridge (pont) regroupe plusieurs interfaces physiques pour qu'elles fonctionnent comme un commutateur logique unique. Toutes les interfaces LAN seront ajoutées au bridge-local.",
+      description: "Un bridge (pont) regroupe plusieurs interfaces physiques pour qu'elles fonctionnent comme un commutateur logique unique. Toutes les interfaces LAN seront ajoutées au bridge-local. Le filtrage des VLANs n'est activé qu'à la fin de la section 04.",
       cliCommands: [
         "# 1. Créer le bridge principal\n/interface bridge add name=bridge-local comment=\"Bridge LAN principal\"",
         "# 2. Ajouter les interfaces physiques au bridge\n/interface bridge port add bridge=bridge-local interface=ether2\n/interface bridge port add bridge=bridge-local interface=ether3\n/interface bridge port add bridge=bridge-local interface=ether4\n/interface bridge port add bridge=bridge-local interface=ether5",
-        "# 3. Activer VLAN filtering sur le bridge\n/interface bridge set bridge-local vlan-filtering=yes",
+        "# 3. VLAN filtering : NE PAS l'activer maintenant\n# Il sera activé EN DERNIER, à la section 04, une fois les VLANs, les PVID et les ports tagged/untagged en place\n# (activé trop tôt, il peut couper l'accès au routeur)",
         "# 4. Vérifier le bridge\n/interface bridge print\n/interface bridge port print"
       ],
       winboxSteps: [
@@ -95,12 +95,12 @@ MK.addSections([
         "Name = <code>bridge-local</code> → OK",
         "<span class='wb-path'>Bridge → Ports</span> → Cliquer sur [+] pour chaque interface",
         "Interface = <code>ether2</code> (répéter pour ether3, ether4, ether5), Bridge = <code>bridge-local</code>",
-        "<span class='wb-path'>Bridge → Bridge</span> → Double-clic sur bridge-local → Onglet VLANs → Cocher VLAN Filtering"
+        "Le <code>VLAN Filtering</code> sera coché à la section 04 (<span class='wb-path'>Bridge → Bridge → bridge-local → onglet VLAN</span>), après la création des VLANs"
       ],
       diagram: "bridge",
       terminology: ["Bridge", "STP", "Interface", "Port", "VLAN filtering"],
       concepts: [
-        { term: "VLAN Filtering", def: "Fonction du bridge qui active le traitement des tags 802.1Q sur les ports. Obligatoire pour les VLANs taggés." },
+        { term: "VLAN Filtering", def: "Fonction du bridge qui active le traitement des tags 802.1Q sur les ports. Obligatoire pour les VLANs taggés. À activer en dernier, une fois la table des VLANs complète." },
         { term: "STP", def: "Spanning Tree Protocol — évite les boucles de commutation dans un réseau bridgé." }
       ]
     },
@@ -108,15 +108,19 @@ MK.addSections([
       id: "wifi",
       track: "socle",
       level: "debutant",
+      alerts: [
+        { type: "warning", icon: "fa-triangle-exclamation", text: "Sans PVID, les clients Wi-Fi tombent dans le VLAN 1 natif, qui n'a ni adresse ni DHCP. Ici le Wi-Fi est rattaché au VLAN 20 (Hotspot invités) ; la table des VLANs est complétée à la section 04." },
+        { type: "info", icon: "fa-circle-info", text: "Pour proposer aussi un Wi-Fi du réseau IT, créez une interface virtuelle avec son propre SSID (/interface wireless add master-interface=wlan1 name=wlan1-it ssid=… security-profile=wifi-secure), puis rattachez-la au bridge avec pvid=10 et déclarez-la en untagged du VLAN 10." }
+      ],
       title: "Configuration Wi-Fi",
       icon: "fa-solid fa-wifi",
       step: "03",
-      description: "Configuration de l'interface sans fil avec sécurité WPA2-PSK, définition du SSID, de la fréquence et du mode AP, puis rattachement au bridge pour unifier filaire et sans-fil.",
+      description: "Configuration de l'interface sans fil avec sécurité WPA2-PSK, définition du SSID, de la fréquence et du mode AP, puis rattachement au bridge pour unifier filaire et sans-fil. Le Wi-Fi est rattaché au VLAN 20 (invités) dès cette étape.",
       cliCommands: [
-        "# 1. Créer un profil de sécurité WPA2\n# ⚠️ Remplacez <CLE_WIFI_FORTE> par une clé WPA2 robuste (min. 12 caractères)\n/interface wireless security-profiles add name=wifi-secure \\\n  mode=dynamic-keys wpa2-pre-shared-key=\"<CLE_WIFI_FORTE>\" \\\n  authentication-types=wpa2-psk",
+        "# 1. Créer un profil de sécurité WPA2\n# ⚠️ Remplacez <CLE_WIFI_FORTE> par une clé WPA2 robuste (min. 12 caractères)\n# Placeholder volontairement NON quoté : tant qu'il n'est pas remplacé, la commande échoue (il ne devient jamais la vraie clé)\n/interface wireless security-profiles add name=wifi-secure \\\n  mode=dynamic-keys wpa2-pre-shared-key=<CLE_WIFI_FORTE> \\\n  authentication-types=wpa2-psk",
         "# 2. Configurer l'interface Wi-Fi (2.4 GHz)\n/interface wireless set wlan1 \\\n  ssid=\"CFP-CMD-WiFi\" \\\n  mode=ap-bridge \\\n  band=2ghz-b/g/n \\\n  channel-width=20/40mhz-XX \\\n  frequency=auto \\\n  security-profile=wifi-secure \\\n  disabled=no",
-        "# 3. Ajouter wlan1 au bridge\n/interface bridge port add bridge=bridge-local interface=wlan1",
-        "# 4. (Optionnel) Interface 5 GHz\n/interface wireless set wlan2 \\\n  ssid=\"CFP-CMD-5G\" mode=ap-bridge \\\n  band=5ghz-a/n/ac security-profile=wifi-secure disabled=no\n/interface bridge port add bridge=bridge-local interface=wlan2"
+        "# 3. Ajouter wlan1 au bridge, directement dans le VLAN 20 (Hotspot invités)\n# Sans PVID, les clients Wi-Fi arrivent dans le VLAN 1 natif, qui n'a ni adresse ni DHCP : aucun client n'obtiendrait d'adresse\n# Le VLAN 20 est créé à la section 04 (pour un Wi-Fi interne : pvid=10, voir l'alerte ci-dessous)\n/interface bridge port add bridge=bridge-local interface=wlan1 pvid=20",
+        "# 4. (Optionnel) Interface 5 GHz\n/interface wireless set wlan2 \\\n  ssid=\"CFP-CMD-5G\" mode=ap-bridge \\\n  band=5ghz-a/n/ac security-profile=wifi-secure disabled=no\n/interface bridge port add bridge=bridge-local interface=wlan2 pvid=20"
       ],
       winboxSteps: [
         "<span class='wb-path'>Wireless → Security Profiles</span> → [+] → Name = <code>wifi-secure</code>, Mode = dynamic keys",
@@ -124,7 +128,7 @@ MK.addSections([
         "<span class='wb-path'>Wireless → Interfaces → wlan1</span> → Double-clic",
         "Onglet Wireless : SSID = <code>CFP-CMD-WiFi</code>, Mode = ap bridge, Security Profile = wifi-secure",
         "Onglet Wireless : Band = 2GHz-B/G/N, Frequency = auto → Apply → OK",
-        "<span class='wb-path'>Bridge → Ports</span> → [+] → Interface = wlan1, Bridge = bridge-local"
+        "<span class='wb-path'>Bridge → Ports</span> → [+] → Interface = wlan1, Bridge = bridge-local, <code>PVID = 20</code> (VLAN Hotspot)"
       ],
       diagram: "wifi",
       terminology: ["AP mode", "PSK", "AES", "SSID", "WPA2", "Band steering"],
@@ -137,24 +141,30 @@ MK.addSections([
       id: "vlans",
       track: "socle",
       level: "intermediaire",
+      alerts: [
+        { type: "warning", icon: "fa-triangle-exclamation", text: "Ne branchez pas votre poste d'administration sur ether3 ou ether4 avant d'avoir terminé les sections 05 et 06 : ces VLANs n'ont pas encore d'adresse ni de DHCP. Restez sur ether5 (réseau d'usine 192.168.88.0/24) ou sur la console, et activez le VLAN filtering en dernier, en Safe Mode (section 11)." },
+        { type: "info", icon: "fa-circle-info", text: "Le Wi-Fi de la section 03 est rattaché au VLAN 20 : il apparaît donc en untagged de ce VLAN. Pour un Wi-Fi du réseau IT, utilisez pvid=10 et déclarez l'interface en untagged du VLAN 10." }
+      ],
       title: "VLANs",
       icon: "fa-solid fa-layer-group",
       step: "04",
-      description: "Segmentation du réseau en VLANs : VLAN10 pour l'IT (réseau interne), VLAN20 pour le Hotspot (accès invités contrôlé). Cette isolation améliore la sécurité et facilite la gestion du trafic.",
+      description: "Segmentation du réseau en VLANs : VLAN10 pour l'IT (réseau interne), VLAN20 pour le Hotspot (accès invités contrôlé). Cette isolation améliore la sécurité et facilite la gestion du trafic. Le filtrage des VLANs est activé à la fin de la section.",
       cliCommands: [
         "# 1. Créer l'interface VLAN10 (IT)\n/interface vlan add name=vlan10-IT vlan-id=10 interface=bridge-local comment=\"VLAN IT\"",
         "# 2. Créer l'interface VLAN20 (Hotspot)\n/interface vlan add name=vlan20-Hotspot vlan-id=20 interface=bridge-local comment=\"VLAN Hotspot invités\"",
-        "# 3. Configurer les VLANs sur le bridge (tagged/untagged)\n/interface bridge vlan add bridge=bridge-local vlan-ids=10 tagged=bridge-local,ether2\n/interface bridge vlan add bridge=bridge-local vlan-ids=20 tagged=bridge-local,ether2",
+        "# 3. Configurer les VLANs sur le bridge (tagged/untagged)\n# ether2 = trunk (tagged) · ether3 = accès VLAN 10 · ether4 et wlan1 = accès VLAN 20 (untagged)\n/interface bridge vlan add bridge=bridge-local vlan-ids=10 tagged=bridge-local,ether2 untagged=ether3\n/interface bridge vlan add bridge=bridge-local vlan-ids=20 tagged=bridge-local,ether2 untagged=ether4,wlan1\n# Si le Wi-Fi 5 GHz de la section 03 est activé : untagged=ether4,wlan1,wlan2",
         "# 4. Configurer les ports untagged (access ports)\n/interface bridge port set [find interface=ether3] pvid=10\n/interface bridge port set [find interface=ether4] pvid=20",
-        "# 5. Vérifier\n/interface vlan print\n/interface bridge vlan print"
+        "# 5. ACTIVER le VLAN filtering EN DERNIER (⚠ en Safe Mode, section 11 ; ne pas être branché sur ether3 ou ether4)\n/interface bridge set bridge-local vlan-filtering=yes",
+        "# 6. Vérifier\n/interface vlan print\n/interface bridge vlan print"
       ],
       winboxSteps: [
         "<span class='wb-path'>Interfaces → [+] → VLAN</span>",
         "Name = <code>vlan10-IT</code>, VLAN ID = <code>10</code>, Interface = <code>bridge-local</code> → OK",
         "Répéter : Name = <code>vlan20-Hotspot</code>, VLAN ID = <code>20</code>, Interface = <code>bridge-local</code>",
-        "<span class='wb-path'>Bridge → VLANs</span> → [+] → VLAN IDs = 10 → Tagged = bridge-local, ether2",
-        "Répéter pour VLAN 20",
-        "<span class='wb-path'>Bridge → Ports</span> → Double-clic ether3 → PVID = 10 ; ether4 → PVID = 20"
+        "<span class='wb-path'>Bridge → VLANs</span> → [+] → VLAN IDs = 10 → Tagged = bridge-local, ether2 ; Untagged = ether3",
+        "Répéter pour VLAN 20 : Tagged = bridge-local, ether2 ; Untagged = ether4, wlan1",
+        "<span class='wb-path'>Bridge → Ports</span> → Double-clic ether3 → PVID = 10 ; ether4 → PVID = 20",
+        "<span class='wb-path'>Bridge → Bridge → bridge-local → onglet VLAN</span> → cocher <code>VLAN Filtering</code> EN DERNIER (en Safe Mode)"
       ],
       diagram: "vlan",
       terminology: ["VLAN", "VLAN tagging", "802.1Q", "PVID", "Tagged", "Untagged", "Trunk port", "Access port"],
@@ -175,6 +185,7 @@ MK.addSections([
         "# Plan d'adressage\n# VLAN10 IT      : 192.168.10.0/24 → GW: 192.168.10.1\n# VLAN20 Hotspot : 192.168.20.0/24 → GW: 192.168.20.1\n# WAN (ether1)   : IP attribuée par le FAI (DHCP)",
         "# 1. IP sur VLAN10 (IT)\n/ip address add address=192.168.10.1/24 interface=vlan10-IT comment=\"GW VLAN IT\"",
         "# 2. IP sur VLAN20 (Hotspot)\n/ip address add address=192.168.20.1/24 interface=vlan20-Hotspot comment=\"GW VLAN Hotspot\"",
+        "# 4. Listes d'interfaces LAN / WAN : réutilisées par le NAT (section 07), le pare-feu (section 09) et les modules suivants\n# Elles évitent de lier les règles à « ether1 » (indispensable pour un second lien WAN, section 26)\n/interface list add name=LAN\n/interface list add name=WAN\n/interface list member add list=LAN interface=vlan10-IT\n/interface list member add list=LAN interface=vlan20-Hotspot\n/interface list member add list=WAN interface=ether1",
         "# 3. IP WAN via DHCP\n/ip dhcp-client add interface=ether1 disabled=no comment=\"WAN - FAI\"",
         "# 4. Vérifier les adresses\n/ip address print\n/ip dhcp-client print"
       ],
@@ -183,7 +194,8 @@ MK.addSections([
         "Address = <code>192.168.10.1/24</code>, Interface = <code>vlan10-IT</code> → OK",
         "Address = <code>192.168.20.1/24</code>, Interface = <code>vlan20-Hotspot</code> → OK",
         "<span class='wb-path'>IP → DHCP Client → [+]</span>",
-        "Interface = <code>ether1</code> → OK (pour récupérer IP du FAI)"
+        "Interface = <code>ether1</code> → OK (pour récupérer IP du FAI)",
+        "<span class='wb-path'>Interfaces → Interface List</span> → créer les listes <code>LAN</code> et <code>WAN</code> ; membres : vlan10-IT et vlan20-Hotspot (LAN), ether1 (WAN)"
       ],
       diagram: "addressing",
       terminology: ["CIDR", "Gateway", "Sous-réseau", "Interface virtuelle", "DHCP client", "FAI"],
@@ -243,14 +255,14 @@ MK.addSections([
       description: "Configuration de la route par défaut vers le WAN et activation du NAT (masquerading) pour permettre aux clients LAN d'accéder à Internet via l'IP publique du routeur.",
       cliCommands: [
         "# 1. Route par défaut (si WAN statique)\n# Note : si ether1 est en DHCP client, la route est automatique.\n/ip route add dst-address=0.0.0.0/0 gateway=<IP_GATEWAY_FAI> comment=\"Route par défaut WAN\"",
-        "# 2. NAT Masquerade (Internet pour tous les LAN)\n/ip firewall nat add chain=srcnat \\\n  out-interface=ether1 \\\n  action=masquerade \\\n  comment=\"NAT - Accès Internet LAN\"",
+        "# 2. NAT Masquerade (Internet pour tous les LAN) — par liste WAN (section 05), pas par « ether1 »\n/ip firewall nat add chain=srcnat \\\n  out-interface-list=WAN \\\n  action=masquerade \\\n  comment=\"NAT - Accès Internet LAN\"",
         "# 3. Vérifier les routes\n/ip route print\n/ip firewall nat print"
       ],
       winboxSteps: [
         "<span class='wb-path'>IP → Routes → [+]</span>",
         "Dst. Address = <code>0.0.0.0/0</code>, Gateway = <code>IP_GATEWAY_FAI</code> → OK",
         "<span class='wb-path'>IP → Firewall → NAT → [+]</span>",
-        "Chain = <code>srcnat</code>, Out. Interface = <code>ether1</code>",
+        "Chain = <code>srcnat</code>, Out. Interface List = <code>WAN</code> (liste créée à la section 05)",
         "Onglet Action : Action = <code>masquerade</code> → OK"
       ],
       diagram: "routing",
@@ -260,13 +272,18 @@ MK.addSections([
         { term: "Route par défaut (0.0.0.0/0)", def: "Route utilisée pour tout trafic dont la destination ne correspond à aucune route plus spécifique." }
       ],
       alerts: [
-        { type: "info", icon: "fa-circle-info", text: "Si ether1 est configuré en DHCP Client, la route par défaut est ajoutée automatiquement. Vérifiez avec /ip route print avant d'en ajouter une manuellement." }
+        { type: "info", icon: "fa-circle-info", text: "Si ether1 est configuré en DHCP Client, la route par défaut est ajoutée automatiquement. Vérifiez avec /ip route print avant d'en ajouter une manuellement." },
+        { type: "info", icon: "fa-circle-info", text: "Le NAT s'appuie sur la liste WAN : ajouter un second lien (section 26) n'oblige plus à modifier cette règle." }
       ]
     },
     {
       id: "hotspot",
       track: "socle",
       level: "intermediaire",
+      alerts: [
+        { type: "warning", icon: "fa-triangle-exclamation", text: "Limites de la détection par TTL : un TTL de 63 ou 127 peut aussi venir d'un équipement placé derrière un autre routeur, certains appareils ont un TTL d'origine différent, et un utilisateur averti peut modifier le TTL de son téléphone. Étalonnez avec l'étape 6 avant d'activer le blocage et informez les utilisateurs de la règle d'usage." },
+        { type: "info", icon: "fa-circle-info", text: "Le blocage doit rester AU-DESSUS de la règle « established » du pare-feu (section 09) : il est ajouté ici avant ces règles, ce qui garantit l'ordre." }
+      ],
       title: "Hotspot & Contrôle Partage",
       icon: "fa-solid fa-satellite-dish",
       step: "08",
@@ -275,15 +292,16 @@ MK.addSections([
         "# ─── HOTSPOT ────────────────────────────────────────────────────\n# 1. Configurer le serveur Hotspot sur VLAN20\n/ip hotspot setup\n# Répondre aux questions :\n# hotspot interface: vlan20-Hotspot\n# local address: 192.168.20.1\n# masquerade: yes\n# pool: 192.168.20.100-192.168.20.250\n# DNS: 8.8.8.8",
         "# 2. Créer un utilisateur hotspot de test\n# ⚠️ Compte de démonstration — changez le mot de passe en production\n/ip hotspot user add name=invite-demo password=<MOT_DE_PASSE_INVITE> comment=\"Utilisateur invité test\"",
         "# 3. Personnaliser le profil hotspot\n/ip hotspot profile set [find default=yes] \\\n  login-by=http-chap \\\n  http-cookie-lifetime=1d \\\n  html-directory=hotspot",
-        "# ─── BLOCAGE TETHERING (TTL Filtering) ──────────────────────────\n# 4. Marquer les paquets TTL <= 1 (tethering détecté)\n/ip firewall mangle add chain=prerouting \\\n  in-interface=vlan20-Hotspot \\\n  ttl=less-than:2 \\\n  action=mark-packet new-packet-mark=tethering passthrough=no",
-        "# 5. Bloquer les paquets marqués comme tethering\n/ip firewall filter add chain=forward \\\n  packet-mark=tethering \\\n  action=drop \\\n  comment=\"Blocage tethering VLAN20\""
+        "# 4. Détecter le tethering par le TTL : un appareil derrière un téléphone qui partage sa connexion arrive avec un TTL diminué de 1\n# TTL d'origine courants : 64 (Android, iOS, Linux, macOS) et 128 (Windows) → 63 ou 127 une fois partagés\n# (le test « TTL < 2 » des versions 1.x ne détectait rien : les clients arrivent avec 64 ou 128, jamais avec 0 ou 1)\n/ip firewall mangle add chain=prerouting \\\n  in-interface=vlan20-Hotspot ttl=equal:63 \\\n  action=mark-packet new-packet-mark=tethering passthrough=no comment=\"Tethering TTL 63\"\n/ip firewall mangle add chain=prerouting \\\n  in-interface=vlan20-Hotspot ttl=equal:127 \\\n  action=mark-packet new-packet-mark=tethering passthrough=no comment=\"Tethering TTL 127\"",
+        "# 5. Bloquer les paquets marqués comme tethering\n/ip firewall filter add chain=forward \\\n  packet-mark=tethering \\\n  action=drop \\\n  comment=\"Blocage tethering VLAN20\"",
+        "# 6. Étalonnage (recommandé AVANT de garder le blocage actif) : compter les TTL réellement observés sur le VLAN 20\n/ip firewall mangle add chain=prerouting in-interface=vlan20-Hotspot ttl=equal:64 action=passthrough comment=\"TTL-stat 64\"\n/ip firewall mangle add chain=prerouting in-interface=vlan20-Hotspot ttl=equal:63 action=passthrough comment=\"TTL-stat 63\"\n/ip firewall mangle add chain=prerouting in-interface=vlan20-Hotspot ttl=equal:128 action=passthrough comment=\"TTL-stat 128\"\n/ip firewall mangle add chain=prerouting in-interface=vlan20-Hotspot ttl=equal:127 action=passthrough comment=\"TTL-stat 127\"\n/ip firewall mangle print stats where comment~\"TTL-stat\"\n# Puis les retirer : /ip firewall mangle remove [find where comment~\"TTL-stat\"]"
       ],
       winboxSteps: [
         "<span class='wb-path'>IP → Hotspot → Setup</span> → Sélectionner <code>vlan20-Hotspot</code> comme interface",
         "Suivre l'assistant : adresse locale, pool DHCP, DNS → Terminer",
         "<span class='wb-path'>IP → Hotspot → Users → [+]</span> → Name = <code>invite-demo</code>, Password = <code>&lt;MOT_DE_PASSE_INVITE&gt;</code> (compte de démonstration)",
         "<span class='wb-path'>IP → Firewall → Mangle → [+]</span>",
-        "Chain = <code>prerouting</code>, In. Interface = <code>vlan20-Hotspot</code>, TTL = less than 2",
+        "Chain = <code>prerouting</code>, In. Interface = <code>vlan20-Hotspot</code>, TTL = <code>equal 63</code> (puis une seconde règle avec <code>equal 127</code>)",
         "Action = mark packet, New Mark = <code>tethering</code>",
         "<span class='wb-path'>IP → Firewall → Filter → [+]</span> Chain = forward, Packet Mark = <code>tethering</code>, Action = drop"
       ],
@@ -291,7 +309,7 @@ MK.addSections([
       terminology: ["Portail captif", "TTL", "Mangle", "Tethering", "Hotspot", "HTTP-CHAP"],
       concepts: [
         { term: "Portail captif", def: "Page web d'authentification affichée avant tout accès Internet. Les clients doivent s'authentifier pour naviguer." },
-        { term: "TTL (Time To Live)", def: "Compteur decrementé à chaque saut réseau. Le tethering produit des paquets avec TTL diminué (téléphone → ordinateur)." }
+        { term: "TTL (Time To Live)", def: "Compteur décrémenté à chaque saut réseau. Un appareil connecté directement arrive avec son TTL d'origine (64 ou 128) ; derrière un téléphone qui partage sa connexion, il arrive avec 63 ou 127." }
       ]
     },
     {
@@ -307,11 +325,12 @@ MK.addSections([
         "# 2. Rejeter les invalides\n/ip firewall filter add chain=input \\\n  connection-state=invalid \\\n  action=drop comment=\"Drop invalides\"",
         "# 3. Autoriser ICMP (ping)\n/ip firewall filter add chain=input \\\n  protocol=icmp action=accept comment=\"Accept ICMP\"",
         "# 4. Autoriser accès admin depuis VLAN10 uniquement\n/ip firewall filter add chain=input \\\n  src-address=192.168.10.0/24 \\\n  action=accept comment=\"Admin depuis VLAN IT\"",
+        "# 4 bis. (Transition) Garder l'accès depuis le réseau d'usine tant que l'administration n'est pas passée sur le VLAN IT\n# À SUPPRIMER à la section 10, une fois connecté depuis 192.168.10.x\n/ip firewall filter add chain=input src-address=192.168.88.0/24 action=accept comment=\"Admin transitoire reseau usine\"",
         "# 5. Bloquer tout autre accès au routeur\n/ip firewall filter add chain=input \\\n  action=drop comment=\"Drop tout autre INPUT\"",
         "# ─── CHAÎNE FORWARD (Inter-VLAN) ────────────────────────────────\n# 6. Accepter connexions établies\n/ip firewall filter add chain=forward \\\n  connection-state=established,related \\\n  action=accept comment=\"Accept forward established\"",
         "# 7. VLAN10 → tout (accès complet)\n/ip firewall filter add chain=forward \\\n  src-address=192.168.10.0/24 \\\n  action=accept comment=\"VLAN10 IT - accès complet\"",
         "# 8. VLAN20 → WAN uniquement (bloquer accès au LAN)\n/ip firewall filter add chain=forward \\\n  src-address=192.168.20.0/24 \\\n  dst-address=192.168.10.0/24 \\\n  action=drop comment=\"VLAN20 → VLAN10 interdit\"",
-        "# 9. Autoriser VLAN20 → WAN\n/ip firewall filter add chain=forward \\\n  src-address=192.168.20.0/24 \\\n  out-interface=ether1 \\\n  action=accept comment=\"VLAN20 Hotspot → WAN uniquement\"",
+        "# 9. Autoriser VLAN20 → WAN (liste WAN de la section 05)\n/ip firewall filter add chain=forward \\\n  src-address=192.168.20.0/24 \\\n  out-interface-list=WAN \\\n  action=accept comment=\"VLAN20 Hotspot → WAN uniquement\"",
         "# 10. Drop le reste\n/ip firewall filter add chain=forward \\\n  action=drop comment=\"Drop forward non autorisé\""
       ],
       winboxSteps: [
@@ -322,7 +341,7 @@ MK.addSections([
         "Chain = <code>input</code>, Src. Address = <code>192.168.10.0/24</code> → Action = accept",
         "Chain = <code>input</code> → Action = drop (règle finale)",
         "Chain = <code>forward</code>, Src. Address = <code>192.168.10.0/24</code> → Action = accept",
-        "Chain = <code>forward</code>, Src = <code>192.168.20.0/24</code>, Dst = <code>192.168.10.0/24</code> → Action = drop",
+        "Chain = <code>forward</code>, Src = <code>192.168.20.0/24</code>, Out-Interface List = <code>WAN</code> → Action = accept",
         "Chain = <code>forward</code>, Src = <code>192.168.20.0/24</code>, Out-Interface = <code>ether1</code> → Action = accept"
       ],
       diagram: "firewall",
@@ -334,7 +353,8 @@ MK.addSections([
       ],
       alerts: [
         { type: "warning", icon: "fa-triangle-exclamation", text: "L'ordre des règles est CRUCIAL dans MikroTik. Les règles sont évaluées de haut en bas ; la première correspondance gagne." },
-        { type: "info", icon: "fa-circle-info", text: "Toujours placer les règles 'accept established/related' en premier pour les performances. Cela évite de ré-évaluer les connexions actives." }
+        { type: "info", icon: "fa-circle-info", text: "Toujours placer les règles 'accept established/related' en premier pour les performances. Cela évite de ré-évaluer les connexions actives." },
+        { type: "warning", icon: "fa-user-lock", text: "Règle transitoire : sans elle, la règle finale « Drop tout autre INPUT » vous couperait l'accès si vous administrez encore depuis le réseau d'usine (192.168.88.0/24). Elle est supprimée à la section 10, après une connexion réussie depuis le VLAN IT." }
       ]
     },
     {
@@ -352,7 +372,8 @@ MK.addSections([
         "# 4. Vérifier les baux DHCP\n/ip dhcp-server lease print",
         "# 5. Vérifier les règles Firewall\n/ip firewall filter print stats\n/ip firewall nat print",
         "# 6. Test de log en temps réel\n/log print follow-only",
-        "# 7. Export de la configuration complète\n/export file=backup-cfp-cmd-$(date)\n# Ou depuis WinBox : Files → Télécharger le fichier .rsc"
+        "# 7. Resserrer l'accès d'administration (⚠ UNIQUEMENT depuis un poste du VLAN IT, en Safe Mode)\n# Retirer la règle transitoire de la section 09 et ne garder que le VLAN IT dans les services\n/ip firewall filter remove [find where comment=\"Admin transitoire reseau usine\"]\n/ip service set ssh address=192.168.10.0/24\n/ip service set winbox address=192.168.10.0/24",
+        "# 8. Export de la configuration complète\n/export file=backup-cfp-cmd\n# Le nom est fixe : renommez le fichier avec la date, ou utilisez la sauvegarde automatique (section 16)\n# Ou depuis WinBox : Files → Télécharger le fichier .rsc"
       ],
       winboxSteps: [
         "<span class='wb-path'>Tools → Ping</span> → Tester vers 8.8.8.8 depuis le routeur",
@@ -369,7 +390,8 @@ MK.addSections([
       ],
       alerts: [
         { type: "success", icon: "fa-circle-check", text: "Configuration terminée ! Pensez à sauvegarder avec /export et à stocker le fichier hors du routeur." },
-        { type: "warning", icon: "fa-triangle-exclamation", text: "Testez TOUS les scénarios : client VLAN10 → Internet, client VLAN20 → Portail Hotspot, VLAN20 ↛ VLAN10." }
+        { type: "warning", icon: "fa-triangle-exclamation", text: "Testez TOUS les scénarios : client VLAN10 → Internet, client VLAN20 → Portail Hotspot, VLAN20 ↛ VLAN10." },
+        { type: "warning", icon: "fa-user-lock", text: "Ne resserrez l'accès (étape 7) qu'après avoir ouvert WinBox ou SSH depuis le VLAN IT (192.168.10.x) : sinon vous vous couperez du routeur." }
       ],
       table: {
         headers: ["Test", "Commande/Action", "Résultat attendu"],

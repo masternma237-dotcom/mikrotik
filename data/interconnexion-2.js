@@ -38,9 +38,13 @@
 /ip route add dst-address=0.0.0.0/0 gateway=1.0.0.1 target-scope=11 check-gateway=ping \
   distance=2 comment="Défaut via WAN2 (secours)"`,
 
-        R`# 3. NAT et pare-feu : remplacer « ether1 » par la liste WAN (sinon le WAN2 n'a ni NAT ni accès Hotspot)
-/ip firewall nat set [find where comment~"Internet LAN"] !out-interface out-interface-list=WAN
-/ip firewall filter set [find where comment~"WAN uniquement"] !out-interface out-interface-list=WAN`,
+        R`# 3. NAT et pare-feu : depuis la v2.0.1 (sections 07 et 09) ils utilisent déjà la liste WAN : on vérifie seulement
+# Le WAN2 (ether5) ayant été ajouté à la liste WAN à l'étape 1, il bénéficie du NAT et de l'accès Hotspot sans autre modification
+/ip firewall nat print where comment~"Internet LAN"
+/ip firewall filter print where comment~"WAN uniquement"
+# Si ces règles affichent encore « out-interface=ether1 » (configuration antérieure à la v2.0.1), corrigez-les :
+# /ip firewall nat set [find where comment~"Internet LAN"] !out-interface out-interface-list=WAN
+# /ip firewall filter set [find where comment~"WAN uniquement"] !out-interface out-interface-list=WAN`,
 
         R`# 4. Journaliser chaque bascule (Netwatch surveille les deux liens)
 /tool netwatch add host=8.8.4.4 interval=10s timeout=2s comment="Test WAN1" \
@@ -68,7 +72,7 @@
         "Relever les passerelles dans la colonne ou la fenêtre de détail de chaque client DHCP",
         "<span class='wb-path'>IP → Routes → [+]</span> → deux routes /32 (<code>8.8.4.4</code> et <code>1.0.0.1</code>) avec Scope = 10 via chaque passerelle",
         "Routes <code>0.0.0.0/0</code> : Gateway = <code>8.8.4.4</code> (Distance 1) puis <code>1.0.0.1</code> (Distance 2), Target Scope = <code>11</code>, Check Gateway = <code>ping</code>",
-        "<span class='wb-path'>IP → Firewall → NAT</span> et <span class='wb-path'>Filter Rules</span> → remplacer Out. Interface par Out. Interface List = <code>WAN</code> sur le masquerade et sur la règle Hotspot",
+        "<span class='wb-path'>IP → Firewall → NAT</span> et <span class='wb-path'>Filter Rules</span> → vérifier que le masquerade et la règle Hotspot utilisent Out. Interface List = <code>WAN</code> (sinon les corriger)",
         "<span class='wb-path'>Tools → Netwatch → [+]</span> → un enregistrement par lien avec Down Script et Up Script pour la journalisation"
       ],
       diagram: "failover-wan",
@@ -81,7 +85,7 @@
       ],
       alerts: [
         { type: "warning", icon: "fa-triangle-exclamation", text: "Hypothèse importante : les passerelles sont connues et stables. Les placeholders &lt;GW_WAN1&gt; et &lt;GW_WAN2&gt; sont à remplacer. Si l'opérateur change la passerelle (DHCP), les routes /32 deviennent fausses : relevez-la de nouveau ou fixez-la côté opérateur." },
-        { type: "warning", icon: "fa-shield-halved", text: "Défauts de la v1.1 corrigés ici : la règle Hotspot de la section 09 et le masquerade de la section 07 étaient liés à ether1. Sans l'étape 3, le Hotspot n'aurait plus d'Internet après une bascule sur WAN2, et aucun NAT ne serait appliqué sur ether5." },
+        { type: "info", icon: "fa-shield-halved", text: "Depuis la version 2.0.1, le masquerade (section 07) et la règle Hotspot (section 09) s'appuient sur la liste WAN : le Hotspot garde Internet après une bascule sur WAN2 et le NAT s'applique aussi sur ether5. Sur une configuration plus ancienne, appliquez les commandes en commentaire de l'étape 3." },
         { type: "info", icon: "fa-circle-info", text: "L'accès 4G de secours est souvent derrière un CGNAT : les redirections de ports (section 17) et le VPN en écoute (section 23) ne fonctionneront pas via ce lien. Prévoyez-le dans votre plan de continuité." }
       ],
       table: {

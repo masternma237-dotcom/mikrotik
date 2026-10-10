@@ -30,7 +30,7 @@ MK.addQuiz({
   ],
   routing: [
     ["Quelle destination désigne la route par défaut ?", ["0.0.0.0/0", "192.168.0.0/16", "255.255.255.255/32", "127.0.0.1/8"], 0, "0.0.0.0/0 correspond à toutes les destinations non connues plus précisément."],
-    ["À quoi sert le masquerade sur ether1 ?", ["Traduire les adresses privées du LAN en l'adresse WAN pour sortir sur Internet", "Bloquer le trafic entrant", "Créer un VPN", "Mesurer le débit"], 0, "Sans NAT, les adresses privées ne seraient pas routées sur Internet."]
+    ["À quoi sert le masquerade appliqué à la sortie WAN ?", ["Traduire les adresses privées du LAN en l'adresse WAN pour sortir sur Internet", "Bloquer le trafic entrant", "Créer un VPN", "Mesurer le débit"], 0, "Sans NAT, les adresses privées ne seraient pas routées sur Internet."]
   ],
   hotspot: [
     ["Que fait un portail captif Hotspot ?", ["Il impose une authentification avant d'ouvrir l'accès Internet", "Il chiffre le trafic Wi-Fi", "Il attribue des adresses IP fixes", "Il remplace le pare-feu"], 0, "Le client est redirigé vers une page de connexion tant qu'il n'est pas authentifié."],

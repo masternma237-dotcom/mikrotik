@@ -46,8 +46,8 @@
   place-before=[find where comment="Drop forward non autorisé"] comment="WireGuard -> VLAN10"`,
 
         R`# 5. Autoriser les réseaux réellement utilisés à joindre SSH et WinBox
-# ⚠ La section 01 a limité ces services à 192.168.88.0/24 (réseau par défaut avant les VLANs) :
-# sans cette correction, l'accès depuis le VLAN IT et depuis le tunnel est refusé par le service lui-même
+# Les services SSH et WinBox sont limités par liste d'adresses (sections 01 et 10) : le réseau du tunnel doit y figurer,
+# sinon l'accès depuis WireGuard est refusé par le service lui-même
 /ip service set ssh address=192.168.10.0/24,10.10.10.0/24
 /ip service set winbox address=192.168.10.0/24,10.10.10.0/24`,
 

@@ -3,6 +3,40 @@
 Toutes les modifications notables de ce projet sont documentées ici.
 Format inspiré de Keep a Changelog. Dates au format JJ/MM/AAAA.
 
+## [2.0.1] — 09/10/2026 — Version corrective du contenu hérité (sections 01 à 10)
+
+Les défauts signalés lors des lots précédents sont corrigés dans les sections concernées.
+
+### Corrections de fond
+- **08 Hotspot — détection du tethering** : le test `ttl=less-than:2` ne détectait rien (les clients
+  arrivent avec un TTL de 64 ou 128). Remplacé par deux règles `ttl=equal:63` et `ttl=equal:127`
+  (appareil derrière un téléphone), plus une étape d'étalonnage par compteurs, et une alerte sur les
+  limites de la méthode (faux positifs, TTL modifiable, appareils à TTL d'origine différent).
+- **01 Sécurisation — verrouillage** : SSH/WinBox n'étaient autorisés que depuis 192.168.88.0/24 alors que
+  l'administration se fait ensuite depuis 192.168.10.0/24. Les deux réseaux sont autorisés, et la
+  section 10 resserre la liste à la fin (règle transitoire du pare-feu supprimée en même temps).
+- **03 et 04 Wi-Fi / VLAN** : wlan1 était dans le VLAN natif 1, sans adresse ni DHCP. Il est maintenant
+  rattaché au VLAN 20 (`pvid=20`, untagged du VLAN 20) ; la section 04 déclare explicitement les ports untagged.
+- **02 et 04 VLAN filtering** : activé dès la section 02, avant la création des VLANs. Reporté en DERNIER à
+  la section 04 (en Safe Mode), avec une alerte sur le branchement du poste d'administration.
+- **05, 07, 09 liste WAN** : le masquerade et la règle Hotspot étaient liés à `ether1`. Les listes LAN et
+  WAN sont créées à la section 05 ; NAT et pare-feu utilisent `out-interface-list=WAN` (le Hotspot garde
+  Internet après une bascule sur un second lien). Sections 13 et 26 adaptées.
+- **09 Pare-feu** : règle transitoire « Admin transitoire reseau usine » pour ne pas se couper l'accès
+  avant le passage sur le VLAN IT (supprimée à la section 10).
+- **03 Wi-Fi** : le placeholder de la clé WPA2 était entre guillemets (il serait devenu la vraie clé) ;
+  il est désormais non quoté, comme les autres secrets.
+- **10 Validation** : `/export file=backup-cfp-cmd-$(date)` n'est pas une syntaxe RouterOS ; corrigé.
+
+### Cohérence
+- Quiz et glossaire alignés (VLAN filtering « en dernier », masquerade sur la sortie WAN).
+- Section 23 : commentaire sur la liste d'adresses des services mis à jour.
+
+### Tests
+- Validateur : 0 erreur ; générateur : 42 contrôles ; navigateur : 65 contrôles réussis (le contrôle de la version dans l'export PDF suit désormais 2.0.1).
+- Non testé sur routeur réel : à valider en laboratoire (CHR), en priorité les sections 03 à 04 (ordre
+  d'activation du VLAN filtering) et 08 (étalonnage du TTL).
+
 ## [2.0.0] — 08/10/2026 — Lot v2.0 « Labs, évaluation, hors ligne, marque »
 
 ### Marque et application installable

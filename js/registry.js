@@ -8,7 +8,7 @@
   'use strict';
 
   const MK = window.MK = {
-    version: '2.0.0',
+    version: '2.0.1',
 
     // Parcours (ordre = ordre d'affichage dans la barre latérale).
     // Un parcours sans section n'est pas affiché.
