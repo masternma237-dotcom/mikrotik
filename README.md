@@ -1,7 +1,7 @@
 # Guide Interactif MikroTik — CFP‑CMD
 
 > Guide web de configuration MikroTik RouterOS 7 à destination des formateurs et
-> étudiants en réseaux — version courante : **v2.0.0** (voir [CHANGELOG.md](CHANGELOG.md)).
+> étudiants en réseaux — version courante : **v2.1.0** (voir [CHANGELOG.md](CHANGELOG.md)).
 
 ## Table des matières
 - [À propos du projet](#à-propos-du-projet)

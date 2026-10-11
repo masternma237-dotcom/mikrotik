@@ -83,9 +83,42 @@ function persistState() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// SPLASH SCREEN (v2.1.0)
+// Le masquage automatique après ~8 s est assuré par CSS (animation
+// « splash-out » avec fill forwards) : si ce script ne s'exécute pas,
+// le splash disparaît quand même. Ici : version affichée (source
+// unique MK.version), passage anticipé et retrait du DOM.
+// ═══════════════════════════════════════════════════════════════
+function initSplash() {
+  const splash = document.getElementById('splash');
+  if (!splash) return;
+
+  // Version complète (x.y.z) — l'en-tête et le pied de page n'affichent que x.y
+  const ver = document.getElementById('splash-version');
+  if (ver) ver.textContent = 'v' + MK.version;
+
+  let done = false;
+  const skip = () => {
+    if (done) return;
+    done = true;
+    splash.classList.add('splash-skip');   // fondu de sortie rapide (CSS)
+    window.setTimeout(() => { if (splash.parentNode) splash.parentNode.removeChild(splash); }, 550);
+  };
+  splash.addEventListener('click', skip);
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') skip();
+  });
+  // Filet de sécurité : animations CSS indisponibles → retrait forcé
+  window.setTimeout(() => { if (splash.parentNode) splash.parentNode.removeChild(splash); }, 8800);
+}
+
+// ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
+  // Splash screen : affiché dès le chargement du DOM, indépendant du reste
+  initSplash();
+
   if (!appData.sections.length) {
     document.getElementById('content-area').textContent = 'Aucune section chargée (vérifiez les balises <script> de data/).';
     return;

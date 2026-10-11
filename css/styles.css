@@ -865,7 +865,7 @@ mark {
 /* ─── PRINT STYLES ───────────────────────────────────────────────── */
 @media print {
   #header, #sidebar, #glossary-panel, #progress-bar-container,
-  .nav-btns, .cli-copy-btn, .cli-all-btn, #footer, #toast-container { display: none !important; }
+  .nav-btns, .cli-copy-btn, .cli-all-btn, #footer, #toast-container, #splash { display: none !important; }
   #app { display: block; margin-top: 0; }
   #main { overflow: visible; }
   body { background: white; color: black; }
@@ -1164,3 +1164,149 @@ code:not(.cli-code) {
 .card-body a, .step-text a { color: var(--cyan); text-decoration: underline; text-underline-offset: 3px; }
 .card-body a:hover, .step-text a:hover { color: var(--accent); }
 .card-body a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   v2.1.0 — Splash screen (écran de démarrage, ~8 s)
+   Le masquage est porté par l'animation elle-même (fill forwards →
+   visibility: hidden) : sans JavaScript, le splash disparaît quand
+   même au bout de 8 s. Couleurs figées sur la marque (fond sombre)
+   quel que soit le thème actif — le thème n'est appliqué qu'ensuite.
+   ═══════════════════════════════════════════════════════════════ */
+#splash {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at 50% 38%, rgba(243, 156, 18, .14), transparent 55%),
+    radial-gradient(circle at 1px 1px, #1e3a5f 1px, transparent 0) 0 0 / 32px 32px,
+    #08111f;
+  animation: splash-out 8s linear forwards;
+}
+/* Passage anticipé (clic / Entrée / Espace / Échap) : spécificité
+   suffisante pour écraser l'animation « splash-out » de #splash. */
+#splash.splash-skip { animation: splash-skip .5s ease forwards; }
+
+@keyframes splash-out {
+  0%   { opacity: 0; visibility: visible; }
+  5%   { opacity: 1; }
+  93%  { opacity: 1; visibility: visible; }
+  100% { opacity: 0; visibility: hidden; }
+}
+@keyframes splash-skip {
+  from { opacity: 1; visibility: visible; }
+  to   { opacity: 0; visibility: hidden; }
+}
+
+.splash-core {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+}
+
+.splash-logo-wrap { position: relative; }
+
+.splash-logo {
+  width: 112px;
+  height: 112px;
+  object-fit: contain;
+  padding: 8px;
+  border-radius: 24px;
+  background: radial-gradient(circle at 50% 40%, #ffffff 0%, #e6edf5 100%);
+  border: 1px solid #2a5080;
+  box-shadow: 0 0 14px rgba(243, 156, 18, .25);
+  animation:
+    splash-logo-in .9s cubic-bezier(.2, .9, .25, 1.25) .3s both,
+    splash-logo-glow 2.4s ease-in-out 1.4s infinite;
+}
+
+.splash-ring {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  border: 2px solid rgba(243, 156, 18, .35);
+  animation:
+    splash-ring-in .8s ease .9s both,
+    splash-ring-pulse 2.4s ease-out 1.8s infinite;
+}
+
+.splash-title {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  color: #e8f4fd;
+  animation: splash-rise .7s ease .9s both;
+}
+
+.splash-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: #8badc8;
+  animation: splash-rise .7s ease 1.15s both;
+}
+.splash-sub span { color: #f39c12; }
+
+.splash-track {
+  width: min(240px, 70vw);
+  height: 4px;
+  margin-top: 8px;
+  border-radius: 2px;
+  background: rgba(30, 58, 95, .8);
+  overflow: hidden;
+}
+.splash-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #f39c12, #00bcd4);
+  animation: splash-progress 8s linear forwards;
+}
+
+.splash-hint {
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: #4d7494;
+  animation: splash-rise .7s ease 2s both;
+}
+
+@keyframes splash-logo-in {
+  from { opacity: 0; transform: scale(.5) rotate(-16deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes splash-logo-glow {
+  0%, 100% { box-shadow: 0 0 14px rgba(243, 156, 18, .25); }
+  50%      { box-shadow: 0 0 36px rgba(243, 156, 18, .6); }
+}
+@keyframes splash-ring-in {
+  from { opacity: 0; transform: scale(.7); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes splash-ring-pulse {
+  0%   { transform: scale(1);    opacity: 1; }
+  70%  { transform: scale(1.35); opacity: 0; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+@keyframes splash-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes splash-progress {
+  0%   { width: 0; }
+  93%  { width: 100%; }
+  100% { width: 100%; }
+}
+
+/* Mouvement réduit : pas d'animations décoratives ; le splash reste
+   visible 8 s puis disparaît via le même fondu (splash-out). */
+@media (prefers-reduced-motion: reduce) {
+  .splash-logo, .splash-title, .splash-sub, .splash-hint { animation: none; }
+  .splash-ring { display: none; }
+}
+

@@ -33,6 +33,24 @@
 
 <body>
 <a class="skip-link" href="#main">Aller au contenu principal</a>
+
+<!-- SPLASH SCREEN (v2.1.0) — écran de démarrage ~8 s.
+     Le masquage automatique est assuré par CSS (animation « splash-out »
+     avec fill forwards) : même si le JavaScript échoue, il disparaît.
+     aria-hidden : décoratif, le contenu se charge derrière. -->
+<div id="splash" aria-hidden="true">
+  <div class="splash-core">
+    <div class="splash-logo-wrap">
+      <span class="splash-ring"></span>
+      <img class="splash-logo" src="assets/favicon-96x96.png" alt="" width="112" height="112" />
+    </div>
+    <div class="splash-title">MikroTik Guide</div>
+    <div class="splash-sub">CFP-CMD · <span id="splash-version">v2.1.0</span></div>
+    <div class="splash-track"><span class="splash-fill"></span></div>
+    <div class="splash-hint">Cliquez ou appuyez sur Échap pour passer</div>
+  </div>
+</div>
+
 <!-- HEADER -->
 <header id="header">
   <div class="header-logo">

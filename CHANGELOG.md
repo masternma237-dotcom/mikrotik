@@ -3,6 +3,15 @@
 Toutes les modifications notables de ce projet sont documentées ici.
 Format inspiré de Keep a Changelog. Dates au format JJ/MM/AAAA.
 
+## [2.1.0] — 10/11/2026 — Version de fonctionnalité : splash screen de démarrage
+
+### Interface
+- **Splash screen de démarrage (~8 s)** : logo animé (apparition échelonnée, halo pulsé, anneau),
+  titre, version complète (v2.1.0), barre de progression et fondu de sortie. Passage anticipé par
+  clic, Entrée, Espace ou Échap. Masquage garanti par CSS même sans JavaScript ; animations
+  décoratives neutralisées en `prefers-reduced-motion` ; aucun nouveau fichier → pré-cache
+  du service worker inchangé.
+
 ## [2.0.1] — 09/10/2026 — Version corrective du contenu hérité (sections 01 à 10)
 
 Les défauts signalés lors des lots précédents sont corrigés dans les sections concernées.

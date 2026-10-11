@@ -5,7 +5,7 @@
 //  • fichiers locaux : réponse du cache puis mise à jour en arrière-plan ;
 //  • ressources externes (polices, icônes, coloration) : mises en cache à la 1re utilisation.
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '2.0.1';
+const VERSION = '2.1.0';
 const CACHE = 'mk-guide-' + VERSION;
 const RUNTIME = 'mk-guide-runtime';
 const PRECACHE = [
